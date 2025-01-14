@@ -2,7 +2,10 @@ package io.vertx.grpc.server;
 
 public enum GrpcProtocol {
 
-  HTTP_2("application/grpc", false), WEB("application/grpc-web", true), WEB_TEXT("application/grpc-web-text", true);
+  HTTP_1("application/json", false),
+  HTTP_2("application/grpc", false),
+  WEB("application/grpc-web", true),
+  WEB_TEXT("application/grpc-web-text", true);
 
   private final String mediaType;
   private final boolean web;

@@ -60,6 +60,11 @@ public class GrpcServerImpl implements GrpcServer {
     String contentType = httpRequest.getHeader(CONTENT_TYPE);
     GrpcProtocol protocol;
     if (contentType != null) {
+      if(contentType.equals("application/json")) {
+        httpRequest.response().setStatusCode(415).end();
+        return;
+      }
+
       Matcher matcher = CONTENT_TYPE_PATTERN.matcher(contentType);
       if (matcher.matches()) {
         if (matcher.group(1) != null) {
