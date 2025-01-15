@@ -14,6 +14,7 @@ package io.vertx.grpc.common;
 import io.netty.util.AsciiString;
 import io.vertx.codegen.annotations.Unstable;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpVersion;
 
 /**
  * The gRPC media types.
@@ -40,6 +41,21 @@ public final class GrpcMediaType {
   public static final CharSequence GRPC_WEB_PROTO = HttpHeaders.createOptimized("application/grpc-web+proto");
 
   /**
+   * gRPC Transcoding.
+   */
+  public static final CharSequence GRPC_TRANSCODING = HttpHeaders.createOptimized("application/json");
+  
+  /**
+   * Whether the provided {@code mediaType} represents gRPC
+   *
+   * @param mediaType the value to test
+   * @return {@code true} if the value represents gRPC, {@code false} otherwise
+   */
+  public static boolean isGrpc(CharSequence mediaType) {
+    return AsciiString.regionMatches(GRPC, true, 0, mediaType, 0, GRPC.length());
+  }
+
+  /**
    * Whether the provided {@code mediaType} represents gRPC-Web
    *
    * @param mediaType the value to test
@@ -47,6 +63,16 @@ public final class GrpcMediaType {
    */
   public static boolean isGrpcWeb(CharSequence mediaType) {
     return AsciiString.regionMatches(GRPC_WEB, true, 0, mediaType, 0, GRPC_WEB.length());
+  }
+
+  /**
+   * Whether the provided {@code mediaType} represents a transcoding format
+   *
+   * @param mediaType the value to test
+   * @return {@code true} if the value represents a transcoding format, {@code false} otherwise
+   */
+  public static boolean isGrpcTranscoding(CharSequence mediaType) {
+    return AsciiString.regionMatches(GRPC_TRANSCODING, true, 0, mediaType, 0, GRPC_TRANSCODING.length());
   }
 
   /**

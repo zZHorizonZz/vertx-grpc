@@ -8,6 +8,7 @@ import io.vertx.core.http.RequestOptions;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.server.GrpcServer;
+import io.vertx.grpc.server.GrpcServerOptions;
 import org.junit.Test;
 
 public class TranscodingTest extends ProxyTestBase {
@@ -16,23 +17,27 @@ public class TranscodingTest extends ProxyTestBase {
   public void testUnary01(TestContext should) {
 
     HttpClient client = vertx.createHttpClient();
+    GrpcServerOptions serverOptions = new GrpcServerOptions().setGrpcTranscodingEnabled(true);
 
-    Future<HttpServer> server = vertx.createHttpServer().requestHandler(GrpcServer.server(vertx).callHandler(io.grpc.examples.helloworld.VertxGreeterGrpcServer.SayHello_JSON, call -> {
+    Future<HttpServer> server = vertx.createHttpServer().requestHandler(GrpcServer.server(vertx, serverOptions).callHandler(io.grpc.examples.helloworld.VertxGreeterGrpcServer.SayHello_JSON, call -> {
       call.handler(helloRequest -> {
         io.grpc.examples.helloworld.HelloReply helloReply = io.grpc.examples.helloworld.HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
         call.response().end(helloReply);
       });
     })).listen(8080, "localhost");
 
-    RequestOptions options = new RequestOptions().setHost("localhost").setPort(8080).setURI("/io.grpc.examples.helloworld.VertxGreeter/SayHello_JSON").setMethod(HttpMethod.POST);
+    RequestOptions options = new RequestOptions().setHost("localhost").setPort(8080).setURI("/helloworld.Greeter/SayHello").setMethod(HttpMethod.POST);
 
     Async test = should.async();
+
+    String data = "{\"name\":\"Julien\"}";
 
     server.onComplete(should.asyncAssertSuccess(v -> {
       client.request(options).compose(req -> {
         req.putHeader("Content-Type", "application/json");
         req.putHeader("Accept", "application/json");
-        req.write("{\"name\":\"Julien\"}");
+        req.putHeader("Content-Length", String.valueOf(data.length()));
+        req.write(data);
         return req.send();
       }).compose(resp -> {
         should.assertEquals(200, resp.statusCode());

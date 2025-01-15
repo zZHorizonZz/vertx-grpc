@@ -21,6 +21,7 @@ import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpVersion;
+import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.common.impl.GrpcReadStreamBase;
 import io.vertx.grpc.common.impl.GrpcMethodCall;
@@ -80,14 +81,14 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcReadStreamBase<GrpcSer
   private Timer deadline;
 
   public GrpcServerRequestImpl(io.vertx.core.internal.ContextInternal context,
-                               boolean scheduleDeadline,
-                               GrpcProtocol protocol,
-                               WireFormat format,
-                               long maxMessageSize,
-                               HttpServerRequest httpRequest,
-                               GrpcMessageDecoder<Req> messageDecoder,
-                               GrpcMessageEncoder<Resp> messageEncoder,
-                               GrpcMethodCall methodCall) {
+    boolean scheduleDeadline,
+    GrpcProtocol protocol,
+    WireFormat format,
+    long maxMessageSize,
+    HttpServerRequest httpRequest,
+    GrpcMessageDecoder<Req> messageDecoder,
+    GrpcMessageEncoder<Resp> messageEncoder,
+    GrpcMethodCall methodCall) {
     super(context, httpRequest, httpRequest.headers().get("grpc-encoding"), format, maxMessageSize, messageDecoder);
     String timeoutHeader = httpRequest.getHeader("grpc-timeout");
     long timeout = timeoutHeader != null ? parseTimeout(timeoutHeader) : 0L;
@@ -105,7 +106,7 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcReadStreamBase<GrpcSer
     this.response = response;
     this.methodCall = methodCall;
     this.scheduleDeadline = scheduleDeadline;
-    if (httpRequest.version() != HttpVersion.HTTP_2 && GrpcMediaType.isGrpcWebText(httpRequest.getHeader(CONTENT_TYPE))) {
+    if (isSupportedHttp1MediaType(httpRequest)) {
       grpcWebTextBuffer = EMPTY_BUFFER;
     } else {
       grpcWebTextBuffer = null;
@@ -132,6 +133,15 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcReadStreamBase<GrpcSer
       deadline = null;
       timer.cancel();
     }
+  }
+
+  boolean isSupportedHttp1MediaType(HttpServerRequest request) {
+    if (request.version() != HttpVersion.HTTP_2) {
+      String contentType = request.headers().get(CONTENT_TYPE);
+      return GrpcMediaType.isGrpcWebText(contentType) || GrpcMediaType.isGrpcTranscoding(contentType);
+    }
+
+    return false;
   }
 
   public String fullMethodName() {
@@ -197,6 +207,11 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcReadStreamBase<GrpcSer
       return;
     }
     if (grpcWebTextBuffer == EMPTY_BUFFER) {
+      if (GrpcMediaType.isGrpcTranscoding(httpRequest.headers().get(CONTENT_TYPE))) {
+        super.handle(chunk);
+        return;
+      }
+
       ByteBuf bbuf = ((BufferInternal) chunk).getByteBuf();
       if ((chunk.length() & 0b11) == 0) {
         // Content length is divisible by four, so we decode it immediately

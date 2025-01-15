@@ -56,15 +56,10 @@ public class GrpcServerImpl implements GrpcServer {
       httpRequest.response().setStatusCode(errorCode).end();
       return;
     }
-    WireFormat format ;
+    WireFormat format;
     String contentType = httpRequest.getHeader(CONTENT_TYPE);
     GrpcProtocol protocol;
     if (contentType != null) {
-      if(contentType.equals("application/json")) {
-        httpRequest.response().setStatusCode(415).end();
-        return;
-      }
-
       Matcher matcher = CONTENT_TYPE_PATTERN.matcher(contentType);
       if (matcher.matches()) {
         if (matcher.group(1) != null) {
@@ -91,8 +86,13 @@ public class GrpcServerImpl implements GrpcServer {
           format = WireFormat.PROTOBUF;
         }
       } else {
-        httpRequest.response().setStatusCode(415).end();
-        return;
+        if (GrpcMediaType.isGrpcTranscoding(contentType)) {
+          protocol = GrpcProtocol.HTTP_1;
+          format = WireFormat.JSON;
+        } else {
+          httpRequest.response().setStatusCode(415).end();
+          return;
+        }
       }
     } else {
       httpRequest.response().setStatusCode(415).end();
@@ -119,12 +119,13 @@ public class GrpcServerImpl implements GrpcServer {
 
   private int refuseRequest(HttpServerRequest request) {
     if (request.version() != HttpVersion.HTTP_2) {
-      if (!options.isGrpcWebEnabled()) {
-        log.trace("gRPC-Web is not enabled, sending error 505");
+      if (!options.isGrpcWebEnabled() && !options.isGrpcTranscodingEnabled()) {
+        log.trace("gRPC is only supported on HTTP/2, sending error 505");
         return 505;
       }
-      if (!GrpcMediaType.isGrpcWeb(request.headers().get(CONTENT_TYPE))) {
-        log.trace("gRPC-Web is the only media type supported on HTTP/1.1, sending error 415");
+      String contentType = request.headers().get(CONTENT_TYPE);
+      if (!GrpcMediaType.isGrpcWeb(contentType) && !GrpcMediaType.isGrpcTranscoding(contentType)) {
+        log.trace("gRPC is only supported on HTTP/2, sending error 415");
         return 415;
       }
     }
@@ -136,12 +137,12 @@ public class GrpcServerImpl implements GrpcServer {
   }
 
   private <Req, Resp> void handle(HttpServerRequest httpRequest,
-                                  GrpcMethodCall methodCall,
-                                  GrpcProtocol protocol,
-                                  WireFormat format,
-                                  GrpcMessageDecoder<Req> messageDecoder,
-                                  GrpcMessageEncoder<Resp> messageEncoder,
-                                  Handler<GrpcServerRequest<Req, Resp>> handler) {
+    GrpcMethodCall methodCall,
+    GrpcProtocol protocol,
+    WireFormat format,
+    GrpcMessageDecoder<Req> messageDecoder,
+    GrpcMessageEncoder<Resp> messageEncoder,
+    Handler<GrpcServerRequest<Req, Resp>> handler) {
     io.vertx.core.internal.ContextInternal context = ((HttpServerRequestInternal) httpRequest).context();
     GrpcServerRequestImpl<Req, Resp> grpcRequest = new GrpcServerRequestImpl<>(
       context,
@@ -181,7 +182,7 @@ public class GrpcServerImpl implements GrpcServer {
         if (prev == null) {
           prev = new ArrayList<>();
         }
-        for (int i = 0;i < prev.size();i++) {
+        for (int i = 0; i < prev.size(); i++) {
           MethodCallHandler<?, ?> a = prev.get(i);
           if (a.messageDecoder.format() == serviceMethod.decoder().format() && a.messageEncoder.format() == serviceMethod.encoder().format()) {
             prev.set(i, p);
@@ -194,7 +195,7 @@ public class GrpcServerImpl implements GrpcServer {
     } else {
       methodCallHandlers.compute(serviceMethod.fullMethodName(), (key, prev) -> {
         if (prev != null) {
-          for (int i = 0;i < prev.size();i++) {
+          for (int i = 0; i < prev.size(); i++) {
             MethodCallHandler<?, ?> a = prev.get(i);
             if (a.messageDecoder.format() == serviceMethod.decoder().format() && a.messageEncoder.format() == serviceMethod.encoder().format()) {
               prev.remove(i);

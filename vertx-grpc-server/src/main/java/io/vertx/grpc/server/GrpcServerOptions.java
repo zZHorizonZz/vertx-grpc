@@ -92,13 +92,6 @@ public class GrpcServerOptions {
   }
 
   /**
-   * @return {@code true} if the gRPC transcoding should be enabled, {@code false} otherwise
-   */
-  public boolean isGrpcTranscodingEnabled() {
-    return grpcTranscodingEnabled;
-  }
-
-  /**
    * Whether the gRPC-Web protocol should be enabled. Defaults to {@code true}.
    *
    * @param grpcWebEnabled {@code true} if the gRPC-Web protocol should be enabled, {@code false} otherwise
@@ -106,6 +99,24 @@ public class GrpcServerOptions {
    */
   public GrpcServerOptions setGrpcWebEnabled(boolean grpcWebEnabled) {
     this.grpcWebEnabled = grpcWebEnabled;
+    return this;
+  }
+
+  /**
+   * @return {@code true} if the gRPC transcoding should be enabled, {@code false} otherwise
+   */
+  public boolean isGrpcTranscodingEnabled() {
+    return grpcTranscodingEnabled;
+  }
+
+  /**
+   * Whether the gRPC transcoding should be enabled. Defaults to {@code false}.
+   *
+   * @param grpcTranscodingEnabled {@code true} if the gRPC transcoding should be enabled, {@code false} otherwise
+   * @return a reference to this, so the API can be used fluently
+   */
+  public GrpcServerOptions setGrpcTranscodingEnabled(boolean grpcTranscodingEnabled) {
+    this.grpcTranscodingEnabled = grpcTranscodingEnabled;
     return this;
   }
 
