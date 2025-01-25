@@ -46,9 +46,9 @@ public class ServerTranscodingTest extends GrpcTestBase {
   public static final ServiceMethod<Empty, Empty> EMPTY_CALL = ServiceMethod.server(TEST_SERVICE_NAME, "EmptyCall", EMPTY_ENCODER, EMPTY_DECODER);
   public static final ServiceMethod<EchoRequest, EchoResponse> UNARY_CALL = ServiceMethod.server(TEST_SERVICE_NAME, "UnaryCall", ECHO_RESPONSE_ENCODER, ECHO_REQUEST_DECODER);
 
-  public static final ServiceTranscodingOptions EMPTY_TRANSCODING = ServiceTranscodingOptions.create("", HttpMethod.valueOf("POST"), "/hello", "", "", null);
-  public static final ServiceTranscodingOptions UNARY_TRANSCODING = ServiceTranscodingOptions.create("", HttpMethod.valueOf("GET"), "/hello", "", "", null);
-  public static final ServiceTranscodingOptions UNARY_TRANSCODING_WITH_PARAM = ServiceTranscodingOptions.create("", HttpMethod.valueOf("GET"), "/hello/{payload}", "", "", null);
+  public static final ServiceTranscodingOptions EMPTY_TRANSCODING = new ServiceTranscodingOptions("", HttpMethod.valueOf("POST"), "/hello", "", "", null);
+  public static final ServiceTranscodingOptions UNARY_TRANSCODING = new ServiceTranscodingOptions("", HttpMethod.valueOf("GET"), "/hello", "", "", null);
+  public static final ServiceTranscodingOptions UNARY_TRANSCODING_WITH_PARAM = new ServiceTranscodingOptions("", HttpMethod.valueOf("GET"), "/hello/{payload}", "", "", null);
 
   private static final String TEST_SERVICE = "/io.vertx.grpcweb.TestService";
 
