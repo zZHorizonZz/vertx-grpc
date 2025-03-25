@@ -206,6 +206,7 @@
     <module>vertx-grpcio-client</module>
     <module>vertx-grpcio-context-storage</module>
     <module>vertx-grpc-protoc-plugin2</module>
+    <module>vertx-grpc-protoc-openapi-plugin</module>
     <module>vertx-grpc-it</module>
     <module>vertx-grpc-docs</module>
   </modules>

@@ -1,0 +1,304 @@
+{{#vertxPackageName}}
+package {{vertxPackageName}};
+{{/vertxPackageName}}
+
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Handler;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.streams.ReadStream;
+import io.vertx.core.streams.WriteStream;
+import io.vertx.grpc.common.GrpcStatus;
+import io.vertx.grpc.common.ServiceName;
+import io.vertx.grpc.common.ServiceMethod;
+import io.vertx.grpc.common.GrpcMessageDecoder;
+import io.vertx.grpc.common.GrpcMessageEncoder;
+import io.vertx.grpc.server.GrpcServer;
+
+import java.util.List;
+
+/**
+ * <p>Provides support for RPC methods implementations of the {{serviceName}} gRPC service.</p>
+ *
+ * <p>The following methods of this class should be overridden to provide an implementation of the service:</p>
+ * <ul>
+{{#allMethods}}
+ *   <li>{{methodName}}</li>
+{{/allMethods}}
+ * </ul>
+ */
+public class {{className}} {
+{{#allMethods}}
+
+  /**
+   * {{methodName}} protobuf RPC server service method.
+   */
+  public static final ServiceMethod<{{inputType}}, {{outputType}}> {{methodName}} = ServiceMethod.server(
+    ServiceName.create("{{packageName}}", "{{serviceName}}"),
+    "{{methodName}}",
+    GrpcMessageEncoder.encoder(),
+    GrpcMessageDecoder.decoder({{inputType}}.parser()));
+{{/allMethods}}
+
+  /**
+   * @return a mutable list of the known protobuf RPC server service methods.
+   */
+  public static java.util.List<ServiceMethod<?, ?>> all() {
+    java.util.List<ServiceMethod<?, ?>> all = new java.util.ArrayList<>();
+{{#allMethods}}
+    all.add({{methodName}});
+{{/allMethods}}
+    return all;
+  }
+
+  /**
+   * Json server service methods.
+   */
+  public static final class Json {
+{{#allMethods}}
+
+    /**
+     * {{methodName}} json RPC server service method.
+     */
+    public static final ServiceMethod<{{inputType}}, {{outputType}}> {{methodName}} = ServiceMethod.server(
+      ServiceName.create("{{packageName}}", "{{serviceName}}"),
+      "{{methodName}}",
+      GrpcMessageEncoder.json(),
+      GrpcMessageDecoder.json(() -> {{inputType}}.newBuilder()));
+{{/allMethods}}
+
+    /**
+     * @return a mutable list of the known json RPC server service methods.
+     */
+    public static java.util.List<ServiceMethod<?, ?>> all() {
+      java.util.List<ServiceMethod<?, ?>> all = new java.util.ArrayList<>();
+{{#allMethods}}
+      all.add({{methodName}});
+{{/allMethods}}
+      return all;
+    }
+  }
+
+  /**
+   * Transcoded server service methods.
+   */
+  public static final class Transcoding {
+{{#transcodingMethods}}
+
+    private static final io.vertx.grpc.transcoding.MethodTranscodingOptions {{methodName}}_OPTIONS = new io.vertx.grpc.transcoding.MethodTranscodingOptions()
+      .setSelector("{{transcodingContext.selector}}")
+      .setHttpMethod(HttpMethod.valueOf("{{transcodingContext.method}}"))
+      .setPath("{{{transcodingContext.path}}}")
+      .setBody("{{{transcodingContext.body}}}")
+      .setResponseBody("{{{transcodingContext.responseBody}}}")
+      {{#transcodingContext.additionalBindings}}
+      .addAdditionalBinding(new io.vertx.grpc.transcoding.MethodTranscodingOptions()
+        .setSelector("{{selector}}")
+        .setHttpMethod(HttpMethod.valueOf("{{method}}"))
+        .setPath("{{{path}}}")
+        .setBody("{{{body}}}")
+        .setResponseBody("{{{responseBody}}}"))
+      {{/transcodingContext.additionalBindings}}
+    ;
+{{/transcodingMethods}}
+{{#transcodingMethods}}
+
+    /**
+     * {{methodName}} transcoded RPC server service method.
+     */
+    public static final io.vertx.grpc.transcoding.TranscodingServiceMethod<{{inputType}}, {{outputType}}> {{methodName}} = io.vertx.grpc.transcoding.TranscodingServiceMethod.server(
+      ServiceName.create("{{packageName}}", "{{serviceName}}"),
+      "{{methodName}}",
+      GrpcMessageEncoder.json(),
+      GrpcMessageDecoder.json(() -> {{inputType}}.newBuilder()),
+      {{methodName}}_OPTIONS);
+{{/transcodingMethods}}
+
+    /**
+     * @return a mutable list of the known transcoded RPC server service methods.
+     */
+    public static java.util.List<ServiceMethod<?, ?>> all() {
+      java.util.List<ServiceMethod<?, ?>> all = new java.util.ArrayList<>();
+{{#transcodingMethods}}
+      all.add({{methodName}});
+{{/transcodingMethods}}
+      return all;
+    }
+  }
+
+{{#unaryMethods}}
+
+  /**
+   * Override this method to implement the {{methodName}} RPC.
+   */
+  protected Future<{{outputType}}> {{vertxMethodName}}({{inputType}} request) {
+    throw new UnsupportedOperationException("Not implemented");
+  }
+
+  protected void {{vertxMethodName}}({{inputType}} request, Promise<{{outputType}}> response) {
+    {{vertxMethodName}}(request)
+      .onSuccess(msg -> response.complete(msg))
+      .onFailure(error -> response.fail(error));
+  }
+{{/unaryMethods}}
+{{#unaryManyMethods}}
+
+  /**
+   * Override this method to implement the {{methodName}} RPC.
+   */
+  protected ReadStream<{{outputType}}> {{vertxMethodName}}({{inputType}} request) {
+    throw new UnsupportedOperationException("Not implemented");
+  }
+
+  protected void {{vertxMethodName}}({{inputType}} request, WriteStream<{{outputType}}> response) {
+    {{vertxMethodName}}(request)
+      .handler(msg -> response.write(msg))
+      .endHandler(msg -> response.end())
+      .resume();
+  }
+{{/unaryManyMethods}}
+{{#manyUnaryMethods}}
+
+  /**
+   * Override this method to implement the {{methodName}} RPC.
+   */
+  protected Future<{{outputType}}> {{vertxMethodName}}(ReadStream<{{inputType}}> request) {
+    throw new UnsupportedOperationException("Not implemented");
+  }
+
+  protected void {{vertxMethodName}}(ReadStream<{{inputType}}> request, Promise<{{outputType}}> response) {
+    {{vertxMethodName}}(request)
+      .onSuccess(msg -> response.complete(msg))
+      .onFailure(error -> response.fail(error));
+  }
+{{/manyUnaryMethods}}
+{{#manyManyMethods}}
+
+  /**
+   * Override this method to implement the {{methodName}} RPC.
+   */
+  protected ReadStream<{{outputType}}> {{vertxMethodName}}(ReadStream<{{inputType}}> request) {
+    throw new UnsupportedOperationException("Not implemented");
+  }
+
+  protected void {{vertxMethodName}}(ReadStream<{{inputType}}> request, WriteStream<{{outputType}}> response) {
+    {{vertxMethodName}}(request)
+      .handler(msg -> response.write(msg))
+      .endHandler(msg -> response.end())
+      .resume();
+  }
+{{/manyManyMethods}}
+
+  /**
+   * Service method to RPC method binder.
+   */
+  public class Binder {
+
+    private final List<ServiceMethod<?, ?>> serviceMethods;
+
+    private Binder(List<ServiceMethod<?, ?>> serviceMethods) {
+      this.serviceMethods = serviceMethods;
+    }
+
+    private void validate() {
+      for (ServiceMethod<?, ?> serviceMethod : serviceMethods) {
+        if (resolveHandler(serviceMethod) == null) {
+          throw new IllegalArgumentException("Invalid service method:" + serviceMethod);
+        }
+      }
+    }
+
+    private <Req, Resp> Handler<io.vertx.grpc.server.GrpcServerRequest<Req, Resp>> resolveHandler(ServiceMethod<Req, Resp> serviceMethod) {
+{{#methods}}
+      if ({{methodName}} == serviceMethod || Json.{{methodName}} == serviceMethod) {
+        Handler<io.vertx.grpc.server.GrpcServerRequest<{{inputType}}, {{outputType}}>> handler = {{className}}.this::handle_{{vertxMethodName}};
+        Handler<?> handler2 = handler;
+        return (Handler<io.vertx.grpc.server.GrpcServerRequest<Req, Resp>>) handler2;
+      }
+{{/methods}}
+      return null;
+    }
+
+    private <Req, Resp> void bindHandler(GrpcServer server, ServiceMethod<Req, Resp> serviceMethod) {
+      Handler<io.vertx.grpc.server.GrpcServerRequest<Req, Resp>> handler = resolveHandler(serviceMethod);
+      server.callHandler(serviceMethod, handler);
+    }
+
+    /**
+     * Bind the contained service methods to the {@code server}.
+     */
+    public void to(GrpcServer server) {
+      for (ServiceMethod<?, ?> serviceMethod : serviceMethods) {
+        bindHandler(server, serviceMethod);
+      }
+    }
+  }
+
+  /**
+   * @return a binder for the list of {@code methods}
+   */
+  public Binder bind(List<ServiceMethod<?, ?>> methods) {
+    Binder binder = new Binder(methods);
+    binder.validate();
+    return binder;
+  }
+
+  /**
+   * @return a binder for the {@code methods}
+   */
+  public Binder bind(ServiceMethod<?, ?>... methods) {
+    return bind(java.util.Arrays.asList(methods));
+  }
+{{#unaryMethods}}
+
+  private void handle_{{vertxMethodName}}(io.vertx.grpc.server.GrpcServerRequest<{{inputType}}, {{outputType}}> request) {
+    Promise<{{outputType}}> promise = Promise.promise();
+    request.handler(msg -> {
+      try {
+        {{vertxMethodName}}(msg, promise);
+      } catch (RuntimeException err) {
+        promise.tryFail(err);
+      }
+    });
+    promise.future()
+      .onFailure(err -> request.response().status(GrpcStatus.INTERNAL).end())
+      .onSuccess(resp -> request.response().end(resp));
+  }
+{{/unaryMethods}}
+{{#unaryManyMethods}}
+
+  private void handle_{{vertxMethodName}}(io.vertx.grpc.server.GrpcServerRequest<{{inputType}}, {{outputType}}> request) {
+    request.handler(msg -> {
+      try {
+        {{vertxMethodName}}(msg, request.response());
+      } catch (RuntimeException err) {
+        request.response().status(GrpcStatus.INTERNAL).end();
+      }
+    });
+  }
+{{/unaryManyMethods}}
+{{#manyUnaryMethods}}
+
+  private void handle_{{vertxMethodName}}(io.vertx.grpc.server.GrpcServerRequest<{{inputType}}, {{outputType}}> request) {
+    Promise<{{outputType}}> promise = Promise.promise();
+    promise.future()
+      .onFailure(err -> request.response().status(GrpcStatus.INTERNAL).end())
+      .onSuccess(resp -> request.response().end(resp));
+    try {
+      {{vertxMethodName}}(request, promise);
+    } catch (RuntimeException err) {
+      promise.tryFail(err);
+    }
+  }
+{{/manyUnaryMethods}}
+{{#manyManyMethods}}
+
+  private void handle_{{vertxMethodName}}(io.vertx.grpc.server.GrpcServerRequest<{{inputType}}, {{outputType}}> request) {
+    try {
+      {{vertxMethodName}}(request, request.response());
+    } catch (RuntimeException err) {
+      request.response().status(GrpcStatus.INTERNAL).end();
+    }
+  }
+{{/manyManyMethods}}
+}
