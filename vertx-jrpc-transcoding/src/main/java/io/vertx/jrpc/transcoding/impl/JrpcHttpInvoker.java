@@ -73,27 +73,12 @@ public class JrpcHttpInvoker implements GrpcHttpInvoker {
       // Create a method call
       GrpcMethodCall methodCall = new GrpcMethodCall(serviceMethod.methodName());
 
-      Buffer body = request.body().await();
-      if (body.length() == 0) {
-        return null; // Empty request body, no JSON-RPC request
-      }
-
-      JsonRpcRequest jsonRpcRequest = JsonRpcRequest.fromJson(body.toJsonObject());
-      String methodName = extractMethodName(jsonRpcRequest, request);
-      if (methodName == null) {
-        return null; // Invalid request, no JSON-RPC request
-      }
-
-      if (!methodName.equals(serviceMethod.methodName()) || !methodName.equals(serviceMethod.fullMethodName())) {
-        return null;
-      }
-
       // Create the request and response objects
       // We'll parse the JSON-RPC request in the JrpcTranscodingServerRequest
       GrpcServerRequestImpl<Req, Resp> grpcRequest = new JrpcTranscodingServerRequest<>(
         context,
         request,
-        jsonRpcRequest,
+        null,
         serviceMethod.decoder(),
         methodCall
       );

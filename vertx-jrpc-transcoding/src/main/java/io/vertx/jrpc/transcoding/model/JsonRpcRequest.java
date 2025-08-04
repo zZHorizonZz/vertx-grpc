@@ -10,6 +10,7 @@
  */
 package io.vertx.jrpc.transcoding.model;
 
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -32,22 +33,26 @@ public class JsonRpcRequest {
   private static final String PARAMS_FIELD = "params";
   private static final String ID_FIELD = "id";
 
-  private final String jsonrpc;
+  private final String id;
   private final String method;
-  private final Object params;
-  private final Object id;
+  private final String jsonrpc;
 
-  /**
-   * Creates a new JSON-RPC request.
-   *
-   * @param method the method name
-   * @param params the parameters (can be JsonObject for named parameters or JsonArray for positional parameters)
-   * @param id the request identifier (can be String, Number, or null)
-   */
-  public JsonRpcRequest(String method, Object params, Object id) {
+  private final JsonArray unamedParams;
+  private final JsonObject namedParams;
+
+  public JsonRpcRequest(String method, JsonArray unamedParams, String id) {
     this.jsonrpc = JSONRPC_VERSION;
     this.method = method;
-    this.params = params;
+    this.unamedParams = unamedParams;
+    this.namedParams = null;
+    this.id = id;
+  }
+
+  public JsonRpcRequest(String method, JsonObject namedParams, String id) {
+    this.jsonrpc = JSONRPC_VERSION;
+    this.method = method;
+    this.unamedParams = null;
+    this.namedParams = namedParams;
     this.id = id;
   }
 
@@ -59,7 +64,23 @@ public class JsonRpcRequest {
    * @return a new JSON-RPC notification
    */
   public static JsonRpcRequest createNotification(String method, Object params) {
-    return new JsonRpcRequest(method, params, null);
+    if (params instanceof JsonObject) {
+      return new JsonRpcRequest(method, (JsonObject) params, null);
+    } else if (params instanceof JsonArray) {
+      return new JsonRpcRequest(method, (JsonArray) params, null);
+    } else {
+      throw new IllegalArgumentException("Params must be an object or array");
+    }
+  }
+
+  public static JsonRpcRequest createRequest(String method, Object params, String id) {
+    if (params instanceof JsonObject) {
+      return new JsonRpcRequest(method, (JsonObject) params, id);
+    } else if (params instanceof JsonArray) {
+      return new JsonRpcRequest(method, (JsonArray) params, id);
+    } else {
+      throw new IllegalArgumentException("Params must be an object or array");
+    }
   }
 
   /**
@@ -88,12 +109,12 @@ public class JsonRpcRequest {
       }
     }
 
-    Object id = null;
+    String id = null;
     if (json.containsKey(ID_FIELD)) {
-      id = json.getValue(ID_FIELD);
+      id = json.getString(ID_FIELD);
     }
 
-    return new JsonRpcRequest(method, params, id);
+    return createRequest(method, params, id);
   }
 
   /**
@@ -106,8 +127,12 @@ public class JsonRpcRequest {
       .put(JSONRPC_FIELD, jsonrpc)
       .put(METHOD_FIELD, method);
 
-    if (params != null) {
-      json.put(PARAMS_FIELD, params);
+    if (unamedParams != null) {
+      json.put(PARAMS_FIELD, unamedParams);
+    }
+
+    if (namedParams != null) {
+      json.put(PARAMS_FIELD, namedParams);
     }
 
     if (id != null) {
@@ -135,13 +160,35 @@ public class JsonRpcRequest {
    * @return the parameters (can be JsonObject, JsonArray, or null)
    */
   public Object getParams() {
-    return params;
+    if (unamedParams != null) {
+      return unamedParams;
+    } else {
+      return namedParams;
+    }
+  }
+
+  public JsonArray getUnnamedParams() {
+    return unamedParams;
+  }
+
+  public JsonObject getNamedParams() {
+    return namedParams;
+  }
+
+  public Buffer toBuffer() {
+    if (unamedParams != null) {
+      return Buffer.buffer(unamedParams.encode());
+    } else if (namedParams != null) {
+      return Buffer.buffer(namedParams.encode());
+    } else {
+      return Buffer.buffer();
+    }
   }
 
   /**
    * @return the request identifier (can be String, Number, or null for notifications)
    */
-  public Object getId() {
+  public String getId() {
     return id;
   }
 

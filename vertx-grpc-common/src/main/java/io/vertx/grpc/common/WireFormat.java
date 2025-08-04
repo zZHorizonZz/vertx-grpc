@@ -23,7 +23,12 @@ public enum WireFormat {
   /**
    * JSON wire format.
    */
-  JSON("json");
+  JSON("json"),
+
+  /**
+   * JSON Array wire format
+   */
+  JSON_ARRAY("json");
 
   final String name;
 

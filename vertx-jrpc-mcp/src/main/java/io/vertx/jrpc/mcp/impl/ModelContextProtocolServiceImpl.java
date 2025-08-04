@@ -9,14 +9,14 @@ import io.vertx.grpc.common.GrpcMessageEncoder;
 import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.server.GrpcServer;
+import io.vertx.jrpc.mcp.ModelContextProtocolPrompt;
+import io.vertx.jrpc.mcp.ModelContextProtocolResource;
 import io.vertx.jrpc.mcp.ModelContextProtocolService;
+import io.vertx.jrpc.mcp.ModelContextProtocolTool;
 import io.vertx.jrpc.mcp.handler.*;
 import io.vertx.jrpc.mcp.proto.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -30,11 +30,15 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
   private static Descriptors.ServiceDescriptor SERVICE_DESCRIPTOR = ModelContextProtocolProto.getDescriptor().findServiceByName("ModelContextProtocolService");
 
   private final Vertx vertx;
+
   private final Map<String, String> capabilities = new ConcurrentHashMap<>();
   private final Map<String, String> activeRequests = new ConcurrentHashMap<>();
-  private final List<Tool> availableTools = new ArrayList<>();
-  private final List<Resource> availableResources = new ArrayList<>();
-  private final List<Prompt> availablePrompts = new ArrayList<>();
+
+  private final List<ModelContextProtocolTool> availableTools = new ArrayList<>();
+  private final List<ModelContextProtocolResource> availableResources = new ArrayList<>();
+  private final List<ModelContextProtocolPrompt> availablePrompts = new ArrayList<>();
+
+  private GrpcServer server;
 
   /**
    * Creates a new ModelContextProtocolServiceImpl.
@@ -47,30 +51,6 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
     // Initialize with some default capabilities
     capabilities.put("protocol_version", "1.0");
     capabilities.put("supports_streaming", "false");
-
-    // Add some example tools
-    availableTools.add(Tool.newBuilder()
-      .setId("tool1")
-      .setName("Example Tool")
-      .setDescription("An example tool for demonstration")
-      .putParameters("param1", "string")
-      .putParameters("param2", "number")
-      .build());
-
-    // Add some example resources
-    availableResources.add(Resource.newBuilder()
-      .setId("resource1")
-      .setName("Example Resource")
-      .setType("text")
-      .setDescription("An example resource for demonstration")
-      .build());
-
-    // Add some example prompts
-    availablePrompts.add(Prompt.newBuilder()
-      .setId("prompt1")
-      .setName("Example Prompt")
-      .setDescription("An example prompt template for demonstration")
-      .build());
   }
 
   @Override
@@ -85,6 +65,8 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
 
   @Override
   public void bind(GrpcServer server) {
+    this.server = server;
+
     // Create service methods for each RPC method
     ServiceMethod<InitializeRequest, InitializeResponse> initializeMethod = ServiceMethod.server(
       SERVICE_NAME, "Initialize",
@@ -210,7 +192,7 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
    */
   public Future<ToolsListResponse> toolsList(ToolsListRequest request) {
     return Future.succeededFuture(ToolsListResponse.newBuilder()
-      .addAllTools(availableTools)
+      .addAllTools(availableTools.stream().map(ModelContextProtocolTool::tool).collect(Collectors.toUnmodifiableSet()))
       .build());
   }
 
@@ -225,26 +207,26 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
     Map<String, String> parameters = request.getParametersMap();
 
     // Check if tool exists
-    boolean toolExists = availableTools.stream()
-      .anyMatch(tool -> tool.getId().equals(toolId));
+    Optional<ModelContextProtocolTool> toolExists = availableTools.stream().filter(tool -> tool.id().equals(toolId)).findAny();
 
-    if (!toolExists) {
+    if (toolExists.isEmpty()) {
       return Future.succeededFuture(ToolsCallResponse.newBuilder()
         .setSuccess(false)
         .setError("Tool not found: " + toolId)
         .build());
     }
 
-    // In a real implementation, this would actually call the tool
-    // For now, just return a mock response
-    return Future.succeededFuture(ToolsCallResponse.newBuilder()
-      .setSuccess(true)
-      .setResult(new JsonObject()
-        .put("toolId", toolId)
-        .put("parameters", new JsonObject(new HashMap<>(parameters)))
-        .put("result", "Tool executed successfully")
-        .encode())
-      .build());
+    JsonObject toolParameters = new JsonObject(new HashMap<>(parameters));
+
+    return toolExists.get().apply(toolParameters)
+      .map(result -> ToolsCallResponse.newBuilder()
+        .setSuccess(true)
+        .setResult(new JsonObject()
+          .put("toolId", toolId)
+          .put("parameters", new JsonObject(new HashMap<>(parameters)))
+          .put("result", result)
+          .encode())
+        .build());
   }
 
   /**
@@ -255,18 +237,18 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
    */
   public Future<ResourcesListResponse> resourcesList(ResourcesListRequest request) {
     String filter = request.getFilter();
-    List<Resource> filteredResources = availableResources;
+    List<ModelContextProtocolResource> filteredResources = availableResources;
 
     // Apply filter if provided
-    if (filter != null && !filter.isEmpty()) {
+    if (!filter.isEmpty()) {
       filteredResources = availableResources.stream()
-        .filter(resource -> resource.getName().contains(filter) ||
-                           resource.getDescription().contains(filter))
+        .filter(resource -> resource.resource().getName().contains(filter) ||
+          resource.resource().getDescription().contains(filter))
         .collect(Collectors.toList());
     }
 
     return Future.succeededFuture(ResourcesListResponse.newBuilder()
-      .addAllResources(filteredResources)
+      .addAllResources(filteredResources.stream().map(ModelContextProtocolResource::resource).collect(Collectors.toUnmodifiableSet()))
       .build());
   }
 
@@ -281,7 +263,7 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
 
     // Check if resource exists
     boolean resourceExists = availableResources.stream()
-      .anyMatch(resource -> resource.getId().equals(resourceId));
+      .anyMatch(resource -> resource.id().equals(resourceId));
 
     if (!resourceExists) {
       return Future.failedFuture("Resource not found: " + resourceId);
@@ -306,7 +288,7 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
 
     // Check if resource exists
     boolean resourceExists = availableResources.stream()
-      .anyMatch(resource -> resource.getId().equals(resourceId));
+      .anyMatch(resource -> resource.id().equals(resourceId));
 
     if (!resourceExists) {
       return Future.succeededFuture(ResourcesSubscribeResponse.newBuilder()
@@ -347,7 +329,7 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
    */
   public Future<PromptsListResponse> promptsList(PromptsListRequest request) {
     return Future.succeededFuture(PromptsListResponse.newBuilder()
-      .addAllPrompts(availablePrompts)
+      .addAllPrompts(availablePrompts.stream().map(ModelContextProtocolPrompt::prompt).collect(Collectors.toUnmodifiableSet()))
       .build());
   }
 
@@ -362,7 +344,7 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
 
     // Check if prompt exists
     boolean promptExists = availablePrompts.stream()
-      .anyMatch(prompt -> prompt.getId().equals(promptId));
+      .anyMatch(prompt -> prompt.id().equals(promptId));
 
     if (!promptExists) {
       return Future.failedFuture("Prompt not found: " + promptId);

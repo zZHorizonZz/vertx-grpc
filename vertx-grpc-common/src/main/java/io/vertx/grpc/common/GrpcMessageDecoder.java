@@ -10,16 +10,13 @@
  */
 package io.vertx.grpc.common;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
-import com.google.protobuf.MessageOrBuilder;
-import com.google.protobuf.Parser;
+import com.google.protobuf.*;
 import com.google.protobuf.util.JsonFormat;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
@@ -28,6 +25,7 @@ public interface GrpcMessageDecoder<T> {
 
   /**
    * Create a decoder for a given protobuf {@link Parser}.
+   *
    * @param messageOrBuilder the message or builder instance that returns decoded messages of type {@code <T>}
    * @return the message decoder
    */
@@ -52,10 +50,37 @@ public interface GrpcMessageDecoder<T> {
             } catch (InvalidProtocolBufferException e) {
               throw new CodecException(e);
             }
+          case JSON_ARRAY:
+            try {
+              Object val = Json.decodeValue(msg.payload());
+
+              if (val instanceof JsonArray) {
+                JsonArray ja = (JsonArray) val;
+                if (!ja.isEmpty()) {
+                  Message.Builder builder = dit.toBuilder();
+                  Descriptors.Descriptor ditfd = dit.getDescriptorForType();
+
+                  JsonObject jo = new JsonObject();
+                  if (ja.size() != ditfd.getFields().size()) {
+                    throw new CodecException("The number of elements in the json array does not match the number of fields in the protobuf message");
+                  }
+
+                  for (int i = 0; i < ja.size(); i++) {
+                    jo.put(ditfd.getFields().get(i).getName(), ja.getValue(i));
+                  }
+
+                  JsonFormat.parser().merge(jo.toBuffer().toString(StandardCharsets.UTF_8), builder);
+                  return (T) builder.build();
+                }
+              }
+            } catch (InvalidProtocolBufferException e) {
+              throw new CodecException(e);
+            }
           default:
             throw new IllegalArgumentException("Invalid wire format: " + msg.format());
         }
       }
+
       @Override
       public boolean accepts(WireFormat format) {
         return true;
@@ -68,6 +93,7 @@ public interface GrpcMessageDecoder<T> {
     public Buffer decode(GrpcMessage msg) throws CodecException {
       return msg.payload();
     }
+
     @Override
     public boolean accepts(WireFormat format) {
       return true;
@@ -76,6 +102,7 @@ public interface GrpcMessageDecoder<T> {
 
   /**
    * Create a decoder for a given protobuf {@link Parser}.
+   *
    * @param builder the supplier of a message builder
    * @return the message decoder
    */
@@ -91,6 +118,7 @@ public interface GrpcMessageDecoder<T> {
           throw new CodecException(e);
         }
       }
+
       @Override
       public boolean accepts(WireFormat format) {
         return format == WireFormat.JSON;
@@ -99,8 +127,7 @@ public interface GrpcMessageDecoder<T> {
   }
 
   /**
-   * Create a decoder in JSON format decoding to instances of the {@code clazz} using
-   * {@link Json#decodeValue(Buffer, Class)} (Jackson Databind is required).
+   * Create a decoder in JSON format decoding to instances of the {@code clazz} using {@link Json#decodeValue(Buffer, Class)} (Jackson Databind is required).
    *
    * @param clazz the java type to decode
    * @return a decoder that decodes messages to instance of {@code clazz} in JSON format.
@@ -118,6 +145,7 @@ public interface GrpcMessageDecoder<T> {
           throw new CodecException(e);
         }
       }
+
       @Override
       public boolean accepts(WireFormat format) {
         return format == WireFormat.JSON;
@@ -138,6 +166,7 @@ public interface GrpcMessageDecoder<T> {
         throw new CodecException("Was expecting an instance of JsonObject instead of " + val.getClass().getName());
       }
     }
+
     @Override
     public boolean accepts(WireFormat format) {
       return format == WireFormat.JSON;
@@ -159,6 +188,7 @@ public interface GrpcMessageDecoder<T> {
         throw new CodecException(e);
       }
     }
+
     @Override
     public boolean accepts(WireFormat format) {
       return format == WireFormat.JSON;

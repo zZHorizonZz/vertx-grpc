@@ -23,6 +23,7 @@ import io.vertx.grpc.common.GrpcStatus;
 import io.vertx.grpc.server.GrpcProtocol;
 import io.vertx.grpc.server.impl.GrpcServerRequestImpl;
 import io.vertx.grpc.server.impl.GrpcServerResponseImpl;
+import io.vertx.grpc.transcoding.impl.GrpcTranscodingError;
 import io.vertx.jrpc.transcoding.model.JsonRpcError;
 import io.vertx.jrpc.transcoding.model.JsonRpcResponse;
 
@@ -109,24 +110,30 @@ public class JrpcTranscodingServerResponse<Req, Resp> extends GrpcServerResponse
 
   @Override
   protected Future<Void> sendEnd() {
+    GrpcStatus status = status();
+    if (status != GrpcStatus.OK) {
+      httpResponse.setStatusCode(GrpcTranscodingError.fromHttp2Code(status.code).getHttpStatusCode());
+    }
     return super.sendEnd();
   }
 
   @Override
   public void cancel() {
-    // Create a JSON-RPC error response for cancellation
-    JsonRpcResponse errorResponse = new JsonRpcResponse(
+    sendResponse(new JsonRpcResponse(
       JsonRpcError.internalError("Request cancelled"),
       request.getJsonRpcRequest().getId()
-    );
+    ));
 
-    Buffer errorBuffer = Buffer.buffer(errorResponse.toJson().encode());
+    // Call the parent cancel method to handle internal state
+    super.cancel();
+  }
+
+  public JrpcTranscodingServerResponse<Req, Resp> sendResponse(JsonRpcResponse response) {
+    Buffer errorBuffer = Buffer.buffer(response.toJson().encode());
     httpResponse.putHeader(HttpHeaders.CONTENT_LENGTH, Integer.toString(errorBuffer.length()));
     httpResponse.putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
     httpResponse.setStatusCode(200); // JSON-RPC always uses 200 OK, errors are in the response body
     httpResponse.end(errorBuffer);
-
-    // Call the parent cancel method to handle internal state
-    super.cancel();
+    return this;
   }
 }

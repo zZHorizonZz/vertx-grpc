@@ -104,16 +104,6 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
       path = path.substring(0, idx);
     }
 
-    if(details.protocol == GrpcProtocol.TRANSCODING) {
-      methodCallHandlers.forEach((k, v) -> {
-        for (MethodCallHandler<?, ?> mch : v) {
-          if (handle(mch, httpRequest, methodCall, details.protocol, details.format)) {
-            return;
-          }
-        }
-      });
-    }
-
     // Generic handling
     Handler<GrpcServerRequest<Buffer, Buffer>> handler = requestHandler;
     if (handler != null) {

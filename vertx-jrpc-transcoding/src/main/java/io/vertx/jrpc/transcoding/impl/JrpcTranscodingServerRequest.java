@@ -21,9 +21,11 @@ import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.WireFormat;
 import io.vertx.grpc.common.impl.GrpcMethodCall;
-import io.vertx.grpc.server.GrpcProtocol;
 import io.vertx.grpc.server.impl.GrpcServerRequestImpl;
+import io.vertx.grpc.transcoding.impl.TranscodingGrpcServerRequest;
 import io.vertx.jrpc.transcoding.model.JsonRpcRequest;
+
+import java.util.List;
 
 /**
  * Implementation of GrpcServerRequestImpl for JSON-RPC transcoding.
@@ -33,9 +35,11 @@ import io.vertx.jrpc.transcoding.model.JsonRpcRequest;
  * @param <Req> the request type
  * @param <Resp> the response type
  */
-public class JrpcTranscodingServerRequest<Req, Resp> extends GrpcServerRequestImpl<Req, Resp> {
+public class JrpcTranscodingServerRequest<Req, Resp> extends TranscodingGrpcServerRequest<Req, Resp> {
 
   private final String methodName;
+  private final HttpServerRequest httpRequest;
+  private final GrpcMessageDecoder<Req> messageDecoder;
 
   private JsonRpcRequest jsonRpcRequest;
 
@@ -48,40 +52,44 @@ public class JrpcTranscodingServerRequest<Req, Resp> extends GrpcServerRequestIm
    * @param messageDecoder the message decoder
    * @param methodCall the gRPC method call
    */
-  public JrpcTranscodingServerRequest(ContextInternal context,
-                                     HttpServerRequest httpRequest,
-                                     JsonRpcRequest jsonRpcRequest,
-                                     GrpcMessageDecoder<Req> messageDecoder,
-                                     GrpcMethodCall methodCall) {
-    super(context, GrpcProtocol.TRANSCODING, WireFormat.JSON, httpRequest, new JrpcMessageDeframer(), createMessageDecoder(messageDecoder, jsonRpcRequest, methodCall), methodCall);
+  public JrpcTranscodingServerRequest(ContextInternal context, HttpServerRequest httpRequest, JsonRpcRequest jsonRpcRequest, GrpcMessageDecoder<Req> messageDecoder,
+    GrpcMethodCall methodCall) {
+    super(context, httpRequest, "", List.of(), messageDecoder, methodCall);
 
+    this.httpRequest = httpRequest;
     this.jsonRpcRequest = jsonRpcRequest;
     this.methodName = methodCall.methodName();
+    this.messageDecoder = createMessageDecoder(httpRequest, messageDecoder, jsonRpcRequest, methodCall);
   }
 
   @Override
-  public void handle(Buffer chunk) {
-    // If we don't have a JSON-RPC request yet, parse it from the chunk
-    if (jsonRpcRequest == null) {
+  public GrpcServerRequestImpl<Req, Resp> handler(Handler<Req> handler) {
+    if (httpRequest instanceof HttpProxyServerRequest) {
       try {
-        String jsonStr = chunk.toString();
-        JsonObject jsonObject = new JsonObject(jsonStr);
-        jsonRpcRequest = JsonRpcRequest.fromJson(jsonObject);
-
-      } catch (DecodeException | IllegalArgumentException e) {
-        // Ignore the chunk
+        Req req = messageDecoder.decode(GrpcMessage.message("identity", WireFormat.JSON, ((HttpProxyServerRequest) httpRequest).getTransformedBody()));
+        handler.handle(req);
+      } catch (Exception e) {
+        super.tryFail(e);
       }
+    } else {
+      super.handler(handler);
     }
-
-    super.handle(chunk);
+    return this;
   }
 
-  private static <Req> GrpcMessageDecoder<Req> createMessageDecoder(GrpcMessageDecoder<Req> originalDecoder, JsonRpcRequest jsonRpcRequest, GrpcMethodCall methodCall) {
+  private static <Req> GrpcMessageDecoder<Req> createMessageDecoder(HttpServerRequest request, GrpcMessageDecoder<Req> originalDecoder, JsonRpcRequest jsonRpcRequest,
+    GrpcMethodCall methodCall) {
     return new GrpcMessageDecoder<>() {
       private JsonRpcRequest parsedRequest = jsonRpcRequest;
 
       @Override
       public Req decode(GrpcMessage msg) throws CodecException {
+        if (request instanceof HttpProxyServerRequest) {
+          parsedRequest = ((HttpProxyServerRequest) request).getJsonRpcRequest();
+          if (parsedRequest != null && !parsedRequest.getMethod().equals(methodCall.methodName())) {
+            throw new CodecException("Method not found: " + parsedRequest.getMethod());
+          }
+        }
         // If we don't have a JSON-RPC request yet, parse it from the message
         if (parsedRequest == null) {
           try {
@@ -113,7 +121,7 @@ public class JrpcTranscodingServerRequest<Req, Resp> extends GrpcServerRequestIm
           throw new CodecException(e);
         }
 
-        return originalDecoder.decode(GrpcMessage.message("identity", WireFormat.JSON, jsonBuffer));
+        return originalDecoder.decode(GrpcMessage.message("identity", parsedRequest.getNamedParams() != null ? WireFormat.JSON : WireFormat.JSON_ARRAY, jsonBuffer));
       }
 
       @Override
@@ -127,10 +135,6 @@ public class JrpcTranscodingServerRequest<Req, Resp> extends GrpcServerRequestIm
    * @return the JSON-RPC request
    */
   public JsonRpcRequest getJsonRpcRequest() {
-    return jsonRpcRequest;
-  }
-
-  public void setJsonRpcRequest(JsonRpcRequest jsonRpcRequest) {
-    this.jsonRpcRequest = jsonRpcRequest;
+    return httpRequest instanceof HttpProxyServerRequest ? ((HttpProxyServerRequest) httpRequest).getJsonRpcRequest() : jsonRpcRequest;
   }
 }
