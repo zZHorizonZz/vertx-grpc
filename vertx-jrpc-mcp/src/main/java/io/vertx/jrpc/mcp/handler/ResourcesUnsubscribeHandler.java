@@ -1,9 +1,11 @@
 package io.vertx.jrpc.mcp.handler;
 
-import io.vertx.grpc.common.GrpcStatus;
+import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
+import io.vertx.jrpc.mcp.proto.InitializeRequest;
+import io.vertx.jrpc.mcp.proto.InitializeResponse;
 import io.vertx.jrpc.mcp.proto.ResourcesUnsubscribeRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesUnsubscribeResponse;
 
@@ -11,6 +13,12 @@ import io.vertx.jrpc.mcp.proto.ResourcesUnsubscribeResponse;
  * Handler for the ResourcesUnsubscribe RPC method.
  */
 public class ResourcesUnsubscribeHandler extends BaseHandler<ResourcesUnsubscribeRequest, ResourcesUnsubscribeResponse> {
+
+  public static final ServiceMethod<ResourcesUnsubscribeRequest, ResourcesUnsubscribeResponse> SERVICE_METHOD = ServiceMethod.server(
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    "ResourcesUnsubscribe",
+    GrpcMessageEncoder.encoder(),
+    GrpcMessageDecoder.decoder(ResourcesUnsubscribeRequest.newBuilder()));
 
   /**
    * Creates a new resources unsubscribe handler.

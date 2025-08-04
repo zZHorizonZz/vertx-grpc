@@ -1,9 +1,11 @@
 package io.vertx.jrpc.mcp.handler;
 
-import io.vertx.grpc.common.GrpcStatus;
+import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
+import io.vertx.jrpc.mcp.proto.InitializeRequest;
+import io.vertx.jrpc.mcp.proto.InitializeResponse;
 import io.vertx.jrpc.mcp.proto.PromptsGetRequest;
 import io.vertx.jrpc.mcp.proto.PromptsGetResponse;
 
@@ -11,6 +13,12 @@ import io.vertx.jrpc.mcp.proto.PromptsGetResponse;
  * Handler for the PromptsGet RPC method.
  */
 public class PromptsGetHandler extends BaseHandler<PromptsGetRequest, PromptsGetResponse> {
+
+  public static final ServiceMethod<PromptsGetRequest, PromptsGetResponse> SERVICE_METHOD = ServiceMethod.server(
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    "PromptsGet",
+    GrpcMessageEncoder.encoder(),
+    GrpcMessageDecoder.decoder(PromptsGetRequest.newBuilder()));
 
   /**
    * Creates a new prompts get handler.

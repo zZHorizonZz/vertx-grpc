@@ -86,7 +86,7 @@ public class JrpcTranscodingServerRequest<Req, Resp> extends TranscodingGrpcServ
       public Req decode(GrpcMessage msg) throws CodecException {
         if (request instanceof HttpProxyServerRequest) {
           parsedRequest = ((HttpProxyServerRequest) request).getJsonRpcRequest();
-          if (parsedRequest != null && !parsedRequest.getMethod().equals(methodCall.methodName())) {
+          if (parsedRequest != null && !parsedRequest.getMethod().equalsIgnoreCase(methodCall.methodName())) {
             throw new CodecException("Method not found: " + parsedRequest.getMethod());
           }
         }
@@ -98,7 +98,7 @@ public class JrpcTranscodingServerRequest<Req, Resp> extends TranscodingGrpcServ
             parsedRequest = JsonRpcRequest.fromJson(jsonObject);
 
             // Check if the method matches
-            if (!parsedRequest.getMethod().equals(methodCall.methodName())) {
+            if (!parsedRequest.getMethod().equalsIgnoreCase(methodCall.methodName())) {
               throw new CodecException("Method not found: " + parsedRequest.getMethod());
             }
           } catch (DecodeException | IllegalArgumentException e) {

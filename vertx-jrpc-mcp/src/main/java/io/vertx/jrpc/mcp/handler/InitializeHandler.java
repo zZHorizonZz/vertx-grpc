@@ -1,7 +1,7 @@
 package io.vertx.jrpc.mcp.handler;
 
 import io.vertx.core.Handler;
-import io.vertx.grpc.common.GrpcStatus;
+import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
@@ -12,6 +12,12 @@ import io.vertx.jrpc.mcp.proto.InitializeResponse;
  * Handler for the Initialize RPC method.
  */
 public class InitializeHandler implements Handler<GrpcServerRequest<InitializeRequest, InitializeResponse>> {
+
+  public static final ServiceMethod<InitializeRequest, InitializeResponse> SERVICE_METHOD = ServiceMethod.server(
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    "Initialize",
+    GrpcMessageEncoder.encoder(),
+    GrpcMessageDecoder.decoder(InitializeRequest.newBuilder()));
 
   private final GrpcServer server;
   private final ModelContextProtocolServiceImpl service;

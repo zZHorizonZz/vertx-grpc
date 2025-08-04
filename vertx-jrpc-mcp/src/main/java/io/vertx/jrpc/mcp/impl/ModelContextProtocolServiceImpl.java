@@ -1,12 +1,12 @@
 package io.vertx.jrpc.mcp.impl;
 
 import com.google.protobuf.Descriptors;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Struct;
+import com.google.protobuf.util.JsonFormat;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.grpc.common.GrpcMessageDecoder;
-import io.vertx.grpc.common.GrpcMessageEncoder;
-import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.jrpc.mcp.ModelContextProtocolPrompt;
@@ -25,13 +25,12 @@ import java.util.stream.Collectors;
  */
 public class ModelContextProtocolServiceImpl implements ModelContextProtocolService {
 
-  private static final ServiceName SERVICE_NAME = ServiceName.create("mcp.ModelContextProtocolService");
+  private static final ServiceName SERVICE_NAME = ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService");
   // We'll set this in the constructor after we have access to the proto classes
   private static Descriptors.ServiceDescriptor SERVICE_DESCRIPTOR = ModelContextProtocolProto.getDescriptor().findServiceByName("ModelContextProtocolService");
 
   private final Vertx vertx;
 
-  private final Map<String, String> capabilities = new ConcurrentHashMap<>();
   private final Map<String, String> activeRequests = new ConcurrentHashMap<>();
 
   private final List<ModelContextProtocolTool> availableTools = new ArrayList<>();
@@ -47,10 +46,6 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
    */
   public ModelContextProtocolServiceImpl(Vertx vertx) {
     this.vertx = vertx;
-
-    // Initialize with some default capabilities
-    capabilities.put("protocol_version", "1.0");
-    capabilities.put("supports_streaming", "false");
   }
 
   @Override
@@ -67,74 +62,18 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
   public void bind(GrpcServer server) {
     this.server = server;
 
-    // Create service methods for each RPC method
-    ServiceMethod<InitializeRequest, InitializeResponse> initializeMethod = ServiceMethod.server(
-      SERVICE_NAME, "Initialize",
-      GrpcMessageEncoder.encoder(),
-      GrpcMessageDecoder.decoder(InitializeRequest.newBuilder()));
-
-    ServiceMethod<PingRequest, PingResponse> pingMethod = ServiceMethod.server(
-      SERVICE_NAME, "Ping",
-      GrpcMessageEncoder.encoder(),
-      GrpcMessageDecoder.decoder(PingRequest.newBuilder()));
-
-    ServiceMethod<CancelRequest, CancelResponse> cancelMethod = ServiceMethod.server(
-      SERVICE_NAME, "Cancel",
-      GrpcMessageEncoder.encoder(),
-      GrpcMessageDecoder.decoder(CancelRequest.newBuilder()));
-
-    ServiceMethod<ToolsListRequest, ToolsListResponse> toolsListMethod = ServiceMethod.server(
-      SERVICE_NAME, "ToolsList",
-      GrpcMessageEncoder.encoder(),
-      GrpcMessageDecoder.decoder(ToolsListRequest.newBuilder()));
-
-    ServiceMethod<ToolsCallRequest, ToolsCallResponse> toolsCallMethod = ServiceMethod.server(
-      SERVICE_NAME, "ToolsCall",
-      GrpcMessageEncoder.encoder(),
-      GrpcMessageDecoder.decoder(ToolsCallRequest.newBuilder()));
-
-    ServiceMethod<ResourcesListRequest, ResourcesListResponse> resourcesListMethod = ServiceMethod.server(
-      SERVICE_NAME, "ResourcesList",
-      GrpcMessageEncoder.encoder(),
-      GrpcMessageDecoder.decoder(ResourcesListRequest.newBuilder()));
-
-    ServiceMethod<ResourcesReadRequest, ResourcesReadResponse> resourcesReadMethod = ServiceMethod.server(
-      SERVICE_NAME, "ResourcesRead",
-      GrpcMessageEncoder.encoder(),
-      GrpcMessageDecoder.decoder(ResourcesReadRequest.newBuilder()));
-
-    ServiceMethod<ResourcesSubscribeRequest, ResourcesSubscribeResponse> resourcesSubscribeMethod = ServiceMethod.server(
-      SERVICE_NAME, "ResourcesSubscribe",
-      GrpcMessageEncoder.encoder(),
-      GrpcMessageDecoder.decoder(ResourcesSubscribeRequest.newBuilder()));
-
-    ServiceMethod<ResourcesUnsubscribeRequest, ResourcesUnsubscribeResponse> resourcesUnsubscribeMethod = ServiceMethod.server(
-      SERVICE_NAME, "ResourcesUnsubscribe",
-      GrpcMessageEncoder.encoder(),
-      GrpcMessageDecoder.decoder(ResourcesUnsubscribeRequest.newBuilder()));
-
-    ServiceMethod<PromptsListRequest, PromptsListResponse> promptsListMethod = ServiceMethod.server(
-      SERVICE_NAME, "PromptsList",
-      GrpcMessageEncoder.encoder(),
-      GrpcMessageDecoder.decoder(PromptsListRequest.newBuilder()));
-
-    ServiceMethod<PromptsGetRequest, PromptsGetResponse> promptsGetMethod = ServiceMethod.server(
-      SERVICE_NAME, "PromptsGet",
-      GrpcMessageEncoder.encoder(),
-      GrpcMessageDecoder.decoder(PromptsGetRequest.newBuilder()));
-
     // Register all handlers with the server
-    server.callHandler(initializeMethod, new InitializeHandler(server, this));
-    server.callHandler(pingMethod, new PingHandler(server, this));
-    server.callHandler(cancelMethod, new CancelHandler(server, this));
-    server.callHandler(toolsListMethod, new ToolsListHandler(server, this));
-    server.callHandler(toolsCallMethod, new ToolsCallHandler(server, this));
-    server.callHandler(resourcesListMethod, new ResourcesListHandler(server, this));
-    server.callHandler(resourcesReadMethod, new ResourcesReadHandler(server, this));
-    server.callHandler(resourcesSubscribeMethod, new ResourcesSubscribeHandler(server, this));
-    server.callHandler(resourcesUnsubscribeMethod, new ResourcesUnsubscribeHandler(server, this));
-    server.callHandler(promptsListMethod, new PromptsListHandler(server, this));
-    server.callHandler(promptsGetMethod, new PromptsGetHandler(server, this));
+    server.callHandler(InitializeHandler.SERVICE_METHOD, new InitializeHandler(server, this));
+    server.callHandler(PingHandler.SERVICE_METHOD, new PingHandler(server, this));
+    server.callHandler(CancelHandler.SERVICE_METHOD, new CancelHandler(server, this));
+    server.callHandler(ToolsListHandler.SERVICE_METHOD, new ToolsListHandler(server, this));
+    server.callHandler(ToolsCallHandler.SERVICE_METHOD, new ToolsCallHandler(server, this));
+    server.callHandler(ResourcesListHandler.SERVICE_METHOD, new ResourcesListHandler(server, this));
+    server.callHandler(ResourcesReadHandler.SERVICE_METHOD, new ResourcesReadHandler(server, this));
+    server.callHandler(ResourcesSubscribeHandler.SERVICE_METHOD, new ResourcesSubscribeHandler(server, this));
+    server.callHandler(ResourcesUnsubscribeHandler.SERVICE_METHOD, new ResourcesUnsubscribeHandler(server, this));
+    server.callHandler(PromptsListHandler.SERVICE_METHOD, new PromptsListHandler(server, this));
+    server.callHandler(PromptsGetHandler.SERVICE_METHOD, new PromptsGetHandler(server, this));
   }
 
   /**
@@ -145,13 +84,25 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
    */
   public Future<InitializeResponse> initialize(InitializeRequest request) {
     // Merge client capabilities with server capabilities
-    capabilities.putAll(request.getCapabilitiesMap());
+    //capabilities.putAll(request.getCapabilitiesMap());
+
+    Struct.Builder capabilitiesBuilder = Struct.newBuilder();
+
+    try {
+      JsonFormat.parser().merge(getCapabilities().encode(), capabilitiesBuilder);
+    } catch (InvalidProtocolBufferException e) {
+      throw new RuntimeException(e);
+    }
 
     // Create response with server information
     InitializeResponse response = InitializeResponse.newBuilder()
-      .setServerName("Vert.x MCP Server")
-      .setServerVersion("1.0.0")
-      .putAllCapabilities(capabilities)
+      .setProtocolVersion(request.getProtocolVersion())
+      .setServerInfo(InitializeResponse.ServerInfo.newBuilder()
+        .setName("Vert.x MCP Server")
+        .setVersion("1.0.0")
+        .build()
+      )
+      .setCapabilities(capabilitiesBuilder.build())
       .build();
 
     return Future.succeededFuture(response);
@@ -357,5 +308,45 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
       .putMetadata("author", "Vert.x")
       .putMetadata("version", "1.0")
       .build());
+  }
+
+  /**
+   * Adds a tool to the available tools list.
+   *
+   * @param tool the tool to add
+   */
+  public void addTool(ModelContextProtocolTool tool) {
+    availableTools.add(tool);
+  }
+
+  /**
+   * Adds a resource to the available resources list.
+   *
+   * @param resource the resource to add
+   */
+  public void addResource(ModelContextProtocolResource resource) {
+    availableResources.add(resource);
+  }
+
+  /**
+   * Adds a prompt to the available prompts list.
+   *
+   * @param prompt the prompt to add
+   */
+  public void addPrompt(ModelContextProtocolPrompt prompt) {
+    availablePrompts.add(prompt);
+  }
+
+  public JsonObject getCapabilities() {
+    JsonObject capabilities = new JsonObject();
+
+    capabilities.put("protocol_version", "1.0");
+    capabilities.put("supports_streaming", "false");
+
+    capabilities.put("resources", new JsonObject());
+    capabilities.put("prompts", new JsonObject());
+    capabilities.put("tools", new JsonObject());
+
+    return capabilities;
   }
 }

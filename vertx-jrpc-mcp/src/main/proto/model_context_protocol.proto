@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/struct.proto";
+
 option java_multiple_files = true;
 option java_package = "io.vertx.jrpc.mcp.proto";
 option java_outer_classname = "ModelContextProtocolProto";
@@ -8,15 +10,31 @@ package mcp;
 
 // Message definitions for initialization & lifecycle
 message InitializeRequest {
-  string client_name = 1;
-  string client_version = 2;
-  map<string, string> capabilities = 3;
+  string protocol_version = 1  [json_name = "protocolVersion"];
+
+  google.protobuf.Struct capabilities = 2 [json_name = "capabilities"];
+
+  message ClientInfo {
+    string name = 1  [json_name = "name"];
+    string version = 2  [json_name = "version"];
+  }
+
+  ClientInfo client_info = 3  [json_name = "clientInfo"];
 }
 
 message InitializeResponse {
-  string server_name = 1;
-  string server_version = 2;
-  map<string, string> capabilities = 3;
+  string protocol_version = 1  [json_name = "protocolVersion"];
+
+  google.protobuf.Struct capabilities = 2 [json_name = "capabilities"];
+
+  message ServerInfo {
+    string name = 1  [json_name = "name"];
+    string version = 2  [json_name = "version"];
+  }
+
+  ServerInfo server_info = 3  [json_name = "serverInfo"];
+
+  string instructions = 4 [json_name = "instructions"];
 }
 
 message InitializedNotification {

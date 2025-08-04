@@ -1,16 +1,24 @@
 package io.vertx.jrpc.mcp.handler;
 
-import io.vertx.grpc.common.GrpcStatus;
+import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
 import io.vertx.jrpc.mcp.proto.CancelRequest;
 import io.vertx.jrpc.mcp.proto.CancelResponse;
+import io.vertx.jrpc.mcp.proto.PingRequest;
+import io.vertx.jrpc.mcp.proto.PingResponse;
 
 /**
  * Handler for the Cancel RPC method.
  */
 public class CancelHandler extends BaseHandler<CancelRequest, CancelResponse> {
+
+  public static final ServiceMethod<CancelRequest, CancelResponse> SERVICE_METHOD = ServiceMethod.server(
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    "Cancel",
+    GrpcMessageEncoder.encoder(),
+    GrpcMessageDecoder.decoder(CancelRequest.newBuilder()));
 
   /**
    * Creates a new cancel handler.

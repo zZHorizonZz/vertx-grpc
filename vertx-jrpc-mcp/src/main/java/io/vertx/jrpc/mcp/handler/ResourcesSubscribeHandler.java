@@ -1,9 +1,11 @@
 package io.vertx.jrpc.mcp.handler;
 
-import io.vertx.grpc.common.GrpcStatus;
+import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
+import io.vertx.jrpc.mcp.proto.InitializeRequest;
+import io.vertx.jrpc.mcp.proto.InitializeResponse;
 import io.vertx.jrpc.mcp.proto.ResourcesSubscribeRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesSubscribeResponse;
 
@@ -11,6 +13,12 @@ import io.vertx.jrpc.mcp.proto.ResourcesSubscribeResponse;
  * Handler for the ResourcesSubscribe RPC method.
  */
 public class ResourcesSubscribeHandler extends BaseHandler<ResourcesSubscribeRequest, ResourcesSubscribeResponse> {
+
+  public static final ServiceMethod<ResourcesSubscribeRequest, ResourcesSubscribeResponse> SERVICE_METHOD = ServiceMethod.server(
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    "ResourcesSubscribe",
+    GrpcMessageEncoder.encoder(),
+    GrpcMessageDecoder.decoder(ResourcesSubscribeRequest.newBuilder()));
 
   /**
    * Creates a new resources subscribe handler.

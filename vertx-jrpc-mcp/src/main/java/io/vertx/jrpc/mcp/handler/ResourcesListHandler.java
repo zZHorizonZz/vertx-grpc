@@ -1,9 +1,11 @@
 package io.vertx.jrpc.mcp.handler;
 
-import io.vertx.grpc.common.GrpcStatus;
+import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
+import io.vertx.jrpc.mcp.proto.InitializeRequest;
+import io.vertx.jrpc.mcp.proto.InitializeResponse;
 import io.vertx.jrpc.mcp.proto.ResourcesListRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesListResponse;
 
@@ -11,6 +13,12 @@ import io.vertx.jrpc.mcp.proto.ResourcesListResponse;
  * Handler for the ResourcesList RPC method.
  */
 public class ResourcesListHandler extends BaseHandler<ResourcesListRequest, ResourcesListResponse> {
+
+  public static final ServiceMethod<ResourcesListRequest, ResourcesListResponse> SERVICE_METHOD = ServiceMethod.server(
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    "ResourcesList",
+    GrpcMessageEncoder.encoder(),
+    GrpcMessageDecoder.decoder(ResourcesListRequest.newBuilder()));
 
   /**
    * Creates a new resources list handler.

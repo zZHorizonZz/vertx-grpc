@@ -1,9 +1,11 @@
 package io.vertx.jrpc.mcp.handler;
 
-import io.vertx.grpc.common.GrpcStatus;
+import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
+import io.vertx.jrpc.mcp.proto.InitializeRequest;
+import io.vertx.jrpc.mcp.proto.InitializeResponse;
 import io.vertx.jrpc.mcp.proto.ToolsListRequest;
 import io.vertx.jrpc.mcp.proto.ToolsListResponse;
 
@@ -11,6 +13,12 @@ import io.vertx.jrpc.mcp.proto.ToolsListResponse;
  * Handler for the ToolsList RPC method.
  */
 public class ToolsListHandler extends BaseHandler<ToolsListRequest, ToolsListResponse> {
+
+  public static final ServiceMethod<ToolsListRequest, ToolsListResponse> SERVICE_METHOD = ServiceMethod.server(
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    "ToolsList",
+    GrpcMessageEncoder.encoder(),
+    GrpcMessageDecoder.decoder(ToolsListRequest.newBuilder()));
 
   /**
    * Creates a new tools list handler.

@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.vertx.jrpc.mcp.sample.weather";
+
+package io.vertx.jrpc.mcp.sample.weather;
+
+service WeatherService {
+  rpc GetAlerts(AlertsRequest) returns (AlertsResponse);
+  rpc GetForecast(ForecastRequest) returns (ForecastResponse);
+}
+
+message AlertsRequest {
+  string location = 1;
+  string severity_level = 2; // e.g., "minor", "moderate", "severe", "extreme"
+}
+
+message WeatherAlert {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string severity = 4;
+  string area = 5;
+  int64 start_time = 6; // Unix timestamp
+  int64 end_time = 7;   // Unix timestamp
+}
+
+message AlertsResponse {
+  repeated WeatherAlert alerts = 1;
+  string location = 2;
+  int64 timestamp = 3; // When the response was generated
+}
+
+message ForecastRequest {
+  string location = 1;
+  int32 days = 2; // Number of days to forecast (default: 7)
+}
+
+message WeatherCondition {
+  string date = 1; // YYYY-MM-DD format
+  double temperature_high = 2; // Celsius
+  double temperature_low = 3;  // Celsius
+  string condition = 4; // e.g., "sunny", "cloudy", "rainy", "snowy"
+  double humidity = 5; // Percentage
+  double wind_speed = 6; // km/h
+  string wind_direction = 7; // e.g., "N", "NE", "E", etc.
+  double precipitation_chance = 8; // Percentage
+}
+
+message ForecastResponse {
+  repeated WeatherCondition forecast = 1;
+  string location = 2;
+  int64 timestamp = 3; // When the response was generated
+}

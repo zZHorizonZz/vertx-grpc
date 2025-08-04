@@ -89,7 +89,7 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
     GrpcMethodCall methodCall = new GrpcMethodCall(httpRequest.path());
     String path = httpRequest.path();
     while (true) {
-      List<MethodCallHandler<?, ?>> mchList = methodCallHandlers.get(path);
+      List<MethodCallHandler<?, ?>> mchList = getMethodHandlers(path);
       if (mchList != null) {
         for (MethodCallHandler<?, ?> mch : mchList) {
           if (handle(mch, httpRequest, methodCall, details.protocol, details.format)) {
@@ -111,6 +111,14 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
     } else {
       httpRequest.response().setStatusCode(500).end();
     }
+  }
+
+  private List<MethodCallHandler<?, ?>> getMethodHandlers(String path) {
+    List<MethodCallHandler<?, ?>> mchList = methodCallHandlers.entrySet().stream().filter(e -> e.getKey().equalsIgnoreCase(path)).map(Map.Entry::getValue).findFirst().orElse(null);
+    if (mchList == null) {
+      mchList = methodCallHandlers.get("/");
+    }
+    return mchList;
   }
 
   private int validate(GrpcServerRequestInspector.RequestInspectionDetails details) {
