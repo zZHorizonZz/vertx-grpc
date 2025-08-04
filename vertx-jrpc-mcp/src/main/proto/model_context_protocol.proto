@@ -1,0 +1,160 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.vertx.jrpc.mcp.proto";
+option java_outer_classname = "ModelContextProtocolProto";
+
+package mcp;
+
+// Message definitions for initialization & lifecycle
+message InitializeRequest {
+  string client_name = 1;
+  string client_version = 2;
+  map<string, string> capabilities = 3;
+}
+
+message InitializeResponse {
+  string server_name = 1;
+  string server_version = 2;
+  map<string, string> capabilities = 3;
+}
+
+message InitializedNotification {
+  bool success = 1;
+}
+
+message PingRequest {
+  int64 timestamp = 1;
+}
+
+message PingResponse {
+  int64 timestamp = 1;
+}
+
+message CancelRequest {
+  string request_id = 1;
+}
+
+message CancelResponse {
+  bool success = 1;
+}
+
+// Message definitions for tools
+message ToolsListRequest {
+}
+
+message Tool {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  map<string, string> parameters = 4;
+}
+
+message ToolsListResponse {
+  repeated Tool tools = 1;
+}
+
+message ToolsCallRequest {
+  string tool_id = 1;
+  map<string, string> parameters = 2;
+}
+
+message ToolsCallResponse {
+  bool success = 1;
+  string result = 2;
+  string error = 3;
+}
+
+// Message definitions for resources
+message ResourcesListRequest {
+  string filter = 1;
+}
+
+message Resource {
+  string id = 1;
+  string name = 2;
+  string type = 3;
+  string description = 4;
+}
+
+message ResourcesListResponse {
+  repeated Resource resources = 1;
+}
+
+message ResourcesReadRequest {
+  string resource_id = 1;
+}
+
+message ResourcesReadResponse {
+  string content = 1;
+  string content_type = 2;
+}
+
+message ResourcesSubscribeRequest {
+  string resource_id = 1;
+}
+
+message ResourcesSubscribeResponse {
+  bool success = 1;
+  string subscription_id = 2;
+}
+
+message ResourcesUnsubscribeRequest {
+  string subscription_id = 1;
+}
+
+message ResourcesUnsubscribeResponse {
+  bool success = 1;
+}
+
+// Message definitions for prompts
+message PromptsListRequest {
+}
+
+message Prompt {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message PromptsListResponse {
+  repeated Prompt prompts = 1;
+}
+
+message PromptsGetRequest {
+  string prompt_id = 1;
+}
+
+message PromptsGetResponse {
+  string content = 1;
+  map<string, string> metadata = 2;
+}
+
+// The ModelContextProtocolService provides methods for working with mcp
+service ModelContextProtocolService {
+  // Initialization & Lifecycle
+  rpc Initialize(InitializeRequest) returns (InitializeResponse);
+
+  rpc Ping(PingRequest) returns (PingResponse);
+
+  rpc Cancel(CancelRequest) returns (CancelResponse);
+
+  // Tools
+  rpc ToolsList(ToolsListRequest) returns (ToolsListResponse);
+
+  rpc ToolsCall(ToolsCallRequest) returns (ToolsCallResponse);
+
+  // Resources
+  rpc ResourcesList(ResourcesListRequest) returns (ResourcesListResponse);
+
+  rpc ResourcesRead(ResourcesReadRequest) returns (ResourcesReadResponse);
+
+  rpc ResourcesSubscribe(ResourcesSubscribeRequest) returns (ResourcesSubscribeResponse);
+
+  rpc ResourcesUnsubscribe(ResourcesUnsubscribeRequest) returns (ResourcesUnsubscribeResponse);
+
+  // Prompts
+  rpc PromptsList(PromptsListRequest) returns (PromptsListResponse);
+
+  rpc PromptsGet(PromptsGetRequest) returns (PromptsGetResponse);
+}
