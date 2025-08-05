@@ -1,5 +1,6 @@
 package io.vertx.jrpc.mcp.impl;
 
+import com.google.protobuf.Descriptors;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Struct;
 import com.google.protobuf.util.JsonFormat;
@@ -36,17 +37,16 @@ public class ModelContextProtocolBridge {
         methodDescriptor.getName(),
         methodDescriptor.getName(),
         methodDescriptor.getName() + " trough mcp",
-        JsonInputSchemaUtil.toJsonSchema(methodDescriptor.getInputType()),
-        JsonInputSchemaUtil.toJsonSchema(methodDescriptor.getOutputType())
+        methodDescriptor
       );
-      mcpService.addTool(tool);
+      mcpService.registerTool(tool);
     }));
 
     return this;
   }
 
-  public ModelContextProtocolTool createBridgeClientTool(String fqn, String name, String methodName, String description, JsonObject inputSchema, JsonObject outputSchema) {
-    return new BridgeClientTool(fqn, name, methodName, description, inputSchema, outputSchema);
+  public ModelContextProtocolTool createBridgeClientTool(String fqn, String name, String methodName, String description, Descriptors.MethodDescriptor methodDescriptor) {
+    return new BridgeClientTool(fqn, name, methodName, description, methodDescriptor);
   }
 
   private class BridgeClientTool implements ModelContextProtocolTool {
@@ -55,16 +55,24 @@ public class ModelContextProtocolBridge {
     private final String title;
     private final String description;
 
+    private final Descriptors.MethodDescriptor methodDescriptor;
+    private final Descriptors.Descriptor inputDescriptor;
+    private final Descriptors.Descriptor outputDescriptor;
+
     private final JsonObject inputSchema;
     private final JsonObject outputSchema;
 
-    public BridgeClientTool(String fqn, String name, String title, String description, JsonObject inputSchema, JsonObject outputSchema) {
+    public BridgeClientTool(String fqn, String name, String title, String description, Descriptors.MethodDescriptor methodDescriptor) {
       this.fqn = fqn;
       this.name = name;
       this.title = title;
       this.description = description;
-      this.inputSchema = inputSchema;
-      this.outputSchema = outputSchema;
+      this.methodDescriptor = methodDescriptor;
+      this.inputSchema = SchemaUtil.toJsonSchema(methodDescriptor.getInputType());
+      this.outputSchema = SchemaUtil.toJsonSchema(methodDescriptor.getOutputType());
+
+      this.inputDescriptor = methodDescriptor.getInputType();
+      this.outputDescriptor = methodDescriptor.getOutputType();
     }
 
     @Override
@@ -87,13 +95,21 @@ public class ModelContextProtocolBridge {
         throw new RuntimeException(e);
       }
 
-      return Tool.newBuilder()
+      Tool.Builder tool = Tool.newBuilder()
         .setName(name)
         .setTitle(title)
         .setDescription(description)
-        .setInputSchema(inputSchemaStruct)
-        .setOutputSchema(outputSchemaStruct)
-        .build();
+        .setInputSchema(inputSchemaStruct);
+
+      if (isStructured()) {
+        tool.setOutputSchema(outputSchemaStruct);
+      }
+
+      return tool.build();
+    }
+
+    private boolean isStructured() {
+      return outputDescriptor != SchemaUtil.CONTENT_DESCRIPTOR && outputDescriptor != SchemaUtil.TEXT_CONTENT_DESCRIPTOR && outputDescriptor != SchemaUtil.IMAGE_CONTENT_DESCRIPTOR && outputDescriptor != SchemaUtil.AUDIO_CONTENT_DESCRIPTOR && outputDescriptor != SchemaUtil.RESOURCE_LINK_CONTENT_DESCRIPTOR;
     }
 
     private JsonObject defaultSchema() {
@@ -113,7 +129,7 @@ public class ModelContextProtocolBridge {
     }
 
     @Override
-    public Future<JsonObject> apply(JsonObject parameters) {
+    public Future<ModelContextProtocolTool.ContentDataType> apply(JsonObject parameters) {
       ModelContextProtocolServerRequest mockRequest = new ModelContextProtocolServerRequest(
         HttpMethod.POST,
         "/" + fqn,
@@ -122,11 +138,23 @@ public class ModelContextProtocolBridge {
       );
 
       ModelContextProtocolServerResponse mockResponse = (ModelContextProtocolServerResponse) mockRequest.response();
-      Promise<JsonObject> resultPromise = Promise.promise();
+      Promise<ModelContextProtocolTool.ContentDataType> resultPromise = Promise.promise();
 
       mockResponse.getResponseFuture().onComplete(ar -> {
         if (ar.succeeded()) {
-          resultPromise.complete(ar.result().toJsonObject());
+          if (outputDescriptor.equals(SchemaUtil.CONTENT_DESCRIPTOR)) {
+            resultPromise.complete(UnstructuredContentDataType.create(ar.result().toJsonObject()));
+          } else if (outputDescriptor.equals(SchemaUtil.TEXT_CONTENT_DESCRIPTOR)) {
+            resultPromise.complete(TextContentDataType.create(ar.result().toJsonObject()));
+          } else if (outputDescriptor.equals(SchemaUtil.IMAGE_CONTENT_DESCRIPTOR)) {
+            resultPromise.complete(ImageContentDataType.create(ar.result().toJsonObject()));
+          } else if (outputDescriptor.equals(SchemaUtil.AUDIO_CONTENT_DESCRIPTOR)) {
+            resultPromise.complete(AudioContentDataType.create(ar.result().toJsonObject()));
+          } else if (outputDescriptor.equals(SchemaUtil.RESOURCE_LINK_CONTENT_DESCRIPTOR)) {
+            resultPromise.complete(ResourceLinkContentDataType.create(ar.result().toJsonObject()));
+          }
+
+          resultPromise.complete(StructuredJsonContentDataType.create(ar.result().toJsonObject()));
         } else {
           resultPromise.fail(ar.cause());
         }

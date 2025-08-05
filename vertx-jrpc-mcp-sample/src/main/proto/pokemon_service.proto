@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+import "service/v1/types.proto";
+
+option java_multiple_files = true;
+option java_package = "io.vertx.jrpc.mcp.sample.pokemon";
+
+package io.vertx.jrpc.mcp.sample.pokemon;
+
+service PokemonService {
+  // Get basic Pokemon information as text content
+  rpc GetPokemon(PokemonRequest) returns (io.modelcontextprotocol.v1.TextContent);
+
+  // Get Pokemon with rich content including text, images, and stats
+  rpc GetRichPokemon(PokemonRequest) returns (io.modelcontextprotocol.v1.Content);
+
+  // Get Pokemon species information with evolution chain
+  rpc GetPokemonSpecies(SpeciesRequest) returns (io.modelcontextprotocol.v1.Content);
+
+  // Get Pokemon type information and effectiveness
+  rpc GetPokemonType(TypeRequest) returns (io.modelcontextprotocol.v1.Content);
+}
+
+message PokemonRequest {
+  oneof identifier {
+    int32 pokemon_id = 1;
+    string pokemon_name = 2;
+  }
+}
+
+message SpeciesRequest {
+  oneof identifier {
+    int32 species_id = 1;
+    string species_name = 2;
+  }
+}
+
+message TypeRequest {
+  oneof identifier {
+    int32 type_id = 1;
+    string type_name = 2;
+  }
+}

@@ -8,10 +8,10 @@ import io.vertx.grpc.server.Service;
  */
 public interface ModelContextProtocolService extends Service {
 
-  void addTool(ModelContextProtocolTool tool);
+  void registerTool(ModelContextProtocolTool tool);
 
-  void addResource(ModelContextProtocolResource resource);
+  void registerResource(ModelContextProtocolResource resource);
 
-  void addPrompt(ModelContextProtocolPrompt prompt);
+  void registerPrompt(ModelContextProtocolPrompt prompt);
 
 }

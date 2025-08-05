@@ -169,18 +169,59 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
     }
 
     return toolExists.get().apply(parameters).map(result -> {
-      Struct.Builder content = Struct.newBuilder();
-      try {
-        JsonFormat.parser().merge(result.encode(), content);
-      } catch (InvalidProtocolBufferException e) {
-        throw new RuntimeException(e);
+      ToolsCallResponse.Builder response = ToolsCallResponse.newBuilder();
+
+      if (result instanceof ModelContextProtocolTool.StructuredJsonContentDataType) {
+        Struct.Builder content = Struct.newBuilder();
+
+        try {
+          JsonFormat.parser().merge(result.toJson().encode(), content);
+        } catch (InvalidProtocolBufferException e) {
+          throw new RuntimeException(e);
+        }
+
+        return response.addContent(convertDataType(result).get(0)).setStructuredContent(content).build();
       }
 
-      return ToolsCallResponse.newBuilder()
-        .addContent(Structs.of("type", Values.of("text"), "text", Values.of(result.encode())))
-        .setStructuredContent(content)
-        .build();
+      if (result instanceof ModelContextProtocolTool.UnstructuredContentDataType) {
+        response.addAllContent(convertDataType(result));
+        return response.build();
+      }
+
+      return response.addContent(convertDataType(result).get(0)).build();
     });
+  }
+
+  private List<Struct> convertDataType(ModelContextProtocolTool.ContentDataType dataType) {
+    List<Struct> content = new ArrayList<>();
+
+    if (dataType instanceof ModelContextProtocolTool.StructuredJsonContentDataType) {
+      content.add(Structs.of("type", Values.of("text"), "text", Values.of(dataType.toJson().encode())));
+      return content;
+    } else if (dataType instanceof ModelContextProtocolTool.UnstructuredContentDataType) {
+      ModelContextProtocolTool.UnstructuredContentDataType unstructuredDataType = (ModelContextProtocolTool.UnstructuredContentDataType) dataType;
+      unstructuredDataType.content().forEach(contentItem -> {
+        Struct.Builder contentItemStruct = Struct.newBuilder();
+        try {
+          JsonFormat.parser().merge(contentItem.toJson().encode(), contentItemStruct);
+        } catch (InvalidProtocolBufferException e) {
+          throw new RuntimeException(e);
+        }
+        content.add(contentItemStruct.build());
+      });
+      return content;
+    }
+
+    Struct.Builder contentItemStruct = Struct.newBuilder();
+    try {
+      JsonFormat.parser().merge(dataType.toJson().encode(), contentItemStruct);
+    } catch (InvalidProtocolBufferException e) {
+      throw new RuntimeException(e);
+    }
+
+    content.add(contentItemStruct.build());
+
+    return content;
   }
 
   /**
@@ -318,7 +359,7 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
    *
    * @param tool the tool to add
    */
-  public void addTool(ModelContextProtocolTool tool) {
+  public void registerTool(ModelContextProtocolTool tool) {
     availableTools.add(tool);
   }
 
@@ -327,7 +368,7 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
    *
    * @param resource the resource to add
    */
-  public void addResource(ModelContextProtocolResource resource) {
+  public void registerResource(ModelContextProtocolResource resource) {
     availableResources.add(resource);
   }
 
@@ -336,7 +377,7 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
    *
    * @param prompt the prompt to add
    */
-  public void addPrompt(ModelContextProtocolPrompt prompt) {
+  public void registerPrompt(ModelContextProtocolPrompt prompt) {
     availablePrompts.add(prompt);
   }
 

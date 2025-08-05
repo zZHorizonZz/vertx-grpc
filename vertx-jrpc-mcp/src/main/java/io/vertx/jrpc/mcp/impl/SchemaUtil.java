@@ -1,11 +1,20 @@
 package io.vertx.jrpc.mcp.impl;
 
+import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.mcp.proto.*;
 
-public class JsonInputSchemaUtil {
+public class SchemaUtil {
+
+  public static final Descriptors.Descriptor TEXT_CONTENT_DESCRIPTOR = TextContent.getDescriptor();
+  public static final Descriptors.Descriptor IMAGE_CONTENT_DESCRIPTOR = ImageContent.getDescriptor();
+  public static final Descriptors.Descriptor AUDIO_CONTENT_DESCRIPTOR = AudioContent.getDescriptor();
+  public static final Descriptors.Descriptor RESOURCE_LINK_CONTENT_DESCRIPTOR = ResourceLinkContent.getDescriptor();
+
+  public static final Descriptors.Descriptor CONTENT_DESCRIPTOR = Content.getDescriptor();
 
   /**
    * Converts a Protobuf Descriptor to a JSON Schema compatible with Vert.x JsonObject

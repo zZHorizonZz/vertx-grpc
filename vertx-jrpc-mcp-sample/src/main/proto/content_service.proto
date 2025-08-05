@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+import "service/v1/types.proto";
+
+option java_multiple_files = true;
+option java_package = "io.vertx.jrpc.mcp.sample.content";
+
+package io.vertx.jrpc.mcp.sample.content;
+
+service ContentService {
+  // Get a blog post as text content
+  rpc GetPost(PostRequest) returns (io.modelcontextprotocol.v1.TextContent);
+
+  // Get a post with rich content including text, images, and resource links
+  rpc GetRichPost(PostRequest) returns (io.modelcontextprotocol.v1.Content);
+
+  // Get user profile with avatar image
+  rpc GetUserProfile(UserRequest) returns (io.modelcontextprotocol.v1.Content);
+
+  // Get a resource link to external content
+  rpc GetResourceLink(ResourceRequest) returns (io.modelcontextprotocol.v1.Content);
+}
+
+message PostRequest {
+  int32 post_id = 1;
+}
+
+message UserRequest {
+  int32 user_id = 1;
+}
+
+message ResourceRequest {
+  string resource_type = 1; // "documentation", "tutorial", "api"
+  string topic = 2;
+}

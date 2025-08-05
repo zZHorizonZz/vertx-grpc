@@ -25,8 +25,9 @@ public class WeatherServiceSample {
     GrpcServer grpcServer = GrpcServer.server(vertx);
 
     // Create and register the weather service
-    WeatherServiceImpl weatherService = new WeatherServiceImpl();
-    grpcServer.addService(weatherService);
+    grpcServer.addService(new WeatherServiceImpl());
+    grpcServer.addService(new ContentServiceImpl());
+    grpcServer.addService(new PokemonServiceImpl());
 
     // Create MCP service
     ModelContextProtocolServiceImpl mcpService = new ModelContextProtocolServiceImpl(vertx);
