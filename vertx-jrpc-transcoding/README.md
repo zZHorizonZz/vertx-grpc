@@ -136,10 +136,8 @@ The JSON-RPC transcoding module follows the JSON-RPC 2.0 specification for error
 ## Limitations
 
 - The current implementation does not support streaming methods
-- Batch requests are processed sequentially, not in parallel
-- The module does not support the JSON-RPC 1.0 specification
+**- Batch requests are processed sequentially, not in parallel**
 
 ## References
 
 - [JSON-RPC 2.0 Specification](https://www.jsonrpc.org/specification)
-- [Vert.x gRPC Documentation](https://vertx.io/docs/vertx-grpc/java/)

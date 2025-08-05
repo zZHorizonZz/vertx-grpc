@@ -16,9 +16,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-/**
- * Tests for the JsonRpcRequest class.
- */
+
 public class JsonRpcRequestTest {
 
   @Test

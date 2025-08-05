@@ -11,8 +11,6 @@
 package io.vertx.jrpc.transcoding.impl;
 
 import io.vertx.core.Future;
-import io.vertx.core.MultiMap;
-import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerResponse;
@@ -28,7 +26,6 @@ import io.vertx.jrpc.transcoding.model.JsonRpcError;
 import io.vertx.jrpc.transcoding.model.JsonRpcResponse;
 
 import java.util.Date;
-import java.util.UUID;
 
 /**
  * Implementation of GrpcServerResponseImpl for JSON-RPC transcoding.
@@ -52,9 +49,9 @@ public class JrpcTranscodingServerResponse<Req, Resp> extends GrpcServerResponse
    * @param encoder the message encoder
    */
   public JrpcTranscodingServerResponse(ContextInternal context,
-                                      GrpcServerRequestImpl<Req, Resp> request,
-                                      HttpServerResponse httpResponse,
-                                      GrpcMessageEncoder<Resp> encoder) {
+    GrpcServerRequestImpl<Req, Resp> request,
+    HttpServerResponse httpResponse,
+    GrpcMessageEncoder<Resp> encoder) {
     super(context, request, GrpcProtocol.TRANSCODING, httpResponse, encoder);
 
     this.request = (JrpcTranscodingServerRequest<Req, Resp>) request;
@@ -75,7 +72,7 @@ public class JrpcTranscodingServerResponse<Req, Resp> extends GrpcServerResponse
 
       // Convert to JSON and send
       Buffer responseBuffer = Buffer.buffer("event: message\n" +
-          "data: " + jsonRpcResponse.toJson().encode() + "\n\n");
+        "data: " + jsonRpcResponse.toJson().encode() + "\n\n");
       //httpResponse.putHeader(HttpHeaders.CONTENT_LENGTH, Integer.toString(responseBuffer.length()));
       httpResponse.putHeader(HttpHeaders.CONTENT_TYPE, "text/event-stream");
       httpResponse.putHeader(HttpHeaders.DATE, Date.from(new Date().toInstant()).toString());
@@ -87,7 +84,6 @@ public class JrpcTranscodingServerResponse<Req, Resp> extends GrpcServerResponse
 
       return httpResponse.write(responseBuffer);
     } catch (Exception e) {
-      // Create an error response
       JsonRpcResponse errorResponse = new JsonRpcResponse(
         JsonRpcError.internalError(e.getMessage()),
         request.getJsonRpcRequest().getId()
@@ -95,7 +91,7 @@ public class JrpcTranscodingServerResponse<Req, Resp> extends GrpcServerResponse
 
       Buffer errorBuffer = Buffer.buffer(errorResponse.toJson().encode());
       httpResponse.putHeader(HttpHeaders.CONTENT_LENGTH, Integer.toString(errorBuffer.length()));
-      httpResponse.putHeader(HttpHeaders.CONTENT_TYPE, /*"application/json"*/"application/json");
+      httpResponse.putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
       httpResponse.setStatusCode(200); // JSON-RPC always uses 200 OK, errors are in the response body
       return httpResponse.end(errorBuffer);
     }

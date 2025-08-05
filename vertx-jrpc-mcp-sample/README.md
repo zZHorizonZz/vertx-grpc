@@ -13,3 +13,10 @@
   }
 }
 ```
+
+### Debugging
+
+For debugging of MCP we can launch [mcp inspector](https://github.com/modelcontextprotocol/inspector)
+```shell
+npx @modelcontextprotocol/inspector
+```

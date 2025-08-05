@@ -15,9 +15,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-/**
- * Tests for the JsonRpcError class.
- */
 public class JsonRpcErrorTest {
 
   @Test

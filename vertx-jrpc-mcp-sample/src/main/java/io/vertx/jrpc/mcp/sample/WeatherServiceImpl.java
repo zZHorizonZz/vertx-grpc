@@ -18,12 +18,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
 public class WeatherServiceImpl implements Service {
@@ -37,7 +34,6 @@ public class WeatherServiceImpl implements Service {
   public static GrpcMessageEncoder<ForecastResponse> FORECAST_RESPONSE_ENCODER = GrpcMessageEncoder.encoder();
 
   private static final HttpClient HTTP = HttpClient.newHttpClient();
-  private final Random random = new Random();
 
   @Override
   public ServiceName name() {
@@ -51,30 +47,30 @@ public class WeatherServiceImpl implements Service {
 
   @Override
   public void bind(GrpcServer server) {
-    server.callHandler(new GetAlertsMethod(), request -> {
-      request.handler(requestBody -> {
-        String location = requestBody.getLocation();
-        geocode(location).thenCompose(coords -> {
-          if (coords == null) return CompletableFuture.completedFuture(new ArrayList<WeatherAlert>());
-          return fetchAlerts(coords[0], coords[1], location);
-        }).whenComplete((alerts, err) -> {
-          List<WeatherAlert> safeAlerts = alerts != null ? alerts : new ArrayList<>();
-          AlertsResponse response = AlertsResponse.newBuilder()
-            .addAllAlerts(safeAlerts)
-            .setLocation(location)
-            .setTimestamp(Instant.now().getEpochSecond())
-            .build();
-          request.response().end(response);
-        });
+    server.callHandler(new GetAlertsMethod(), request -> request.handler(requestBody -> {
+      String location = requestBody.getLocation();
+      geocode(location).thenCompose(coords -> {
+        if (coords == null)
+          return CompletableFuture.completedFuture(new ArrayList<>());
+        return fetchAlerts(coords[0], coords[1], location);
+      }).whenComplete((alerts, err) -> {
+        List<WeatherAlert> safeAlerts = alerts != null ? alerts : new ArrayList<>();
+        AlertsResponse response = AlertsResponse.newBuilder()
+          .addAllAlerts(safeAlerts)
+          .setLocation(location)
+          .setTimestamp(Instant.now().getEpochSecond())
+          .build();
+        request.response().end(response);
       });
-    });
+    }));
 
     server.callHandler(new GetForecastMethod(), request -> {
       request.handler(requestBody -> {
         String location = requestBody.getLocation();
         int days = requestBody.getDays() > 0 ? requestBody.getDays() : 7;
         geocode(location).thenCompose(coords -> {
-          if (coords == null) return CompletableFuture.completedFuture(new ArrayList<WeatherCondition>());
+          if (coords == null)
+            return CompletableFuture.completedFuture(new ArrayList<WeatherCondition>());
           return fetchForecast(coords[0], coords[1], days);
         }).whenComplete((forecast, err) -> {
           List<WeatherCondition> safeForecast = forecast != null ? forecast : new ArrayList<>();
@@ -146,11 +142,12 @@ public class WeatherServiceImpl implements Service {
         .thenApply(body -> {
           JsonObject json = new JsonObject(body);
           JsonArray results = json.getJsonArray("results");
-          if (results == null || results.isEmpty()) return null;
+          if (results == null || results.isEmpty())
+            return null;
           JsonObject first = results.getJsonObject(0);
           double lat = first.getDouble("latitude");
           double lon = first.getDouble("longitude");
-          return new double[]{lat, lon};
+          return new double[] { lat, lon };
         })
         .exceptionally(err -> null);
     } catch (Exception e) {
@@ -183,7 +180,8 @@ public class WeatherServiceImpl implements Service {
     List<WeatherCondition> list = new ArrayList<>();
     JsonObject json = new JsonObject(body);
     JsonObject daily = json.getJsonObject("daily");
-    if (daily == null) return list;
+    if (daily == null)
+      return list;
     JsonArray dates = daily.getJsonArray("time");
     JsonArray tMax = daily.getJsonArray("temperature_2m_max");
     JsonArray tMin = daily.getJsonArray("temperature_2m_min");
@@ -232,7 +230,8 @@ public class WeatherServiceImpl implements Service {
     List<WeatherAlert> list = new ArrayList<>();
     JsonObject json = new JsonObject(body);
     JsonArray warnings = json.getJsonArray("warnings");
-    if (warnings == null) return list;
+    if (warnings == null)
+      return list;
     long now = Instant.now().getEpochSecond();
     for (int i = 0; i < warnings.size(); i++) {
       JsonObject w = warnings.getJsonObject(i);
@@ -242,8 +241,10 @@ public class WeatherServiceImpl implements Service {
       String description = w.getString("headline", w.getString("description", event));
       long start = toEpoch(w.getString("effective"));
       long end = toEpoch(w.getString("expires"));
-      if (start == 0) start = now;
-      if (end == 0) end = now + 6 * 3600;
+      if (start == 0)
+        start = now;
+      if (end == 0)
+        end = now + 6 * 3600;
       WeatherAlert alert = WeatherAlert.newBuilder()
         .setId(id.isEmpty() ? ("ALERT_" + i) : id)
         .setTitle(event)
@@ -259,14 +260,19 @@ public class WeatherServiceImpl implements Service {
   }
 
   private static String degToCompass(double deg) {
-    String[] dirs = {"N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"};
+    String[] dirs = { "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW" };
     int idx = (int) Math.round(((deg % 360) / 22.5));
     return dirs[idx % 16];
   }
 
   private static double toDouble(Object o) {
-    if (o instanceof Number) return ((Number) o).doubleValue();
-    try { return Double.parseDouble(String.valueOf(o)); } catch (Exception e) { return 0d; }
+    if (o instanceof Number)
+      return ((Number) o).doubleValue();
+    try {
+      return Double.parseDouble(String.valueOf(o));
+    } catch (Exception e) {
+      return 0d;
+    }
   }
 
   private static long toEpoch(String iso) {

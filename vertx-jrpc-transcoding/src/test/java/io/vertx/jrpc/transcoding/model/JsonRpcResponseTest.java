@@ -21,7 +21,7 @@ import static org.junit.Assert.*;
  */
 public class JsonRpcResponseTest {
 
-  /*@Test
+  @Test
   public void testCreateSuccessResponse() {
     JsonRpcResponse response = new JsonRpcResponse(19, 1);
     assertEquals("2.0", response.getJsonrpc());
@@ -177,5 +177,5 @@ public class JsonRpcResponseTest {
       .put("id", 1);
 
     JsonRpcResponse.fromJson(json);
-  }*/
+  }
 }

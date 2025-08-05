@@ -6,8 +6,6 @@ import com.google.protobuf.util.JsonFormat;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import io.vertx.grpc.server.GrpcServer;
@@ -15,36 +13,25 @@ import io.vertx.jrpc.mcp.ModelContextProtocolService;
 import io.vertx.jrpc.mcp.ModelContextProtocolTool;
 import io.vertx.jrpc.mcp.proto.Tool;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-/**
- * Bridge that connects MCP service with JSON-RPC transcoding and HTTP client execution.
- */
 public class ModelContextProtocolBridge {
 
   private final Vertx vertx;
   private final ModelContextProtocolService mcpService;
+
   private GrpcServer grpcServer;
-  private HttpClient httpClient;
-  private int port;
-  private final AtomicInteger requestIdCounter = new AtomicInteger(1);
 
   public ModelContextProtocolBridge(Vertx vertx, ModelContextProtocolService mcpService) {
     this.vertx = vertx;
     this.mcpService = mcpService;
   }
 
-  /**
-   * Registers the MCP service methods with the gRPC server for JSON-RPC transcoding.
-   */
   public ModelContextProtocolBridge bind(GrpcServer grpcServer) {
     this.grpcServer = grpcServer;
 
-    // Bind the MCP service to the gRPC server
     mcpService.bind(grpcServer);
 
     grpcServer.services().forEach(service -> service.methodDescriptors().forEach(methodDescriptor -> {
-      ModelContextProtocolTool httpTool = createHttpClientTool(
+      ModelContextProtocolTool tool = createBridgeClientTool(
         service.name().fullyQualifiedName() + "/" + methodDescriptor.getName(),
         methodDescriptor.getName(),
         methodDescriptor.getName(),
@@ -52,34 +39,17 @@ public class ModelContextProtocolBridge {
         JsonInputSchemaUtil.toJsonSchema(methodDescriptor.getInputType()),
         JsonInputSchemaUtil.toJsonSchema(methodDescriptor.getOutputType())
       );
-      mcpService.addTool(httpTool);
+      mcpService.addTool(tool);
     }));
 
     return this;
   }
 
-  /**
-   * Sets up HTTP client for self-calling mechanism.
-   */
-  public ModelContextProtocolBridge withHttpClient(int port) {
-    this.port = port;
-    this.httpClient = vertx.createHttpClient(new HttpClientOptions()
-      .setDefaultHost("localhost")
-      .setDefaultPort(port));
-    return this;
+  public ModelContextProtocolTool createBridgeClientTool(String fqn, String name, String methodName, String description, JsonObject inputSchema, JsonObject outputSchema) {
+    return new BridgeClientTool(fqn, name, methodName, description, inputSchema, outputSchema);
   }
 
-  /**
-   * Creates a tool that executes methods via HTTP client calls to itself.
-   */
-  public ModelContextProtocolTool createHttpClientTool(String fqn, String name, String methodName, String description, JsonObject inputSchema, JsonObject outputSchema) {
-    return new HttpClientTool(fqn, name, methodName, description, inputSchema, outputSchema);
-  }
-
-  /**
-   * Tool implementation that uses HTTP client to call MCP methods via JSON-RPC.
-   */
-  private class HttpClientTool implements ModelContextProtocolTool {
+  private class BridgeClientTool implements ModelContextProtocolTool {
     private final String fqn;
     private final String name;
     private final String title;
@@ -88,7 +58,7 @@ public class ModelContextProtocolBridge {
     private final JsonObject inputSchema;
     private final JsonObject outputSchema;
 
-    public HttpClientTool(String fqn, String name, String title, String description, JsonObject inputSchema, JsonObject outputSchema) {
+    public BridgeClientTool(String fqn, String name, String title, String description, JsonObject inputSchema, JsonObject outputSchema) {
       this.fqn = fqn;
       this.name = name;
       this.title = title;
@@ -151,13 +121,9 @@ public class ModelContextProtocolBridge {
         vertx.getOrCreateContext()
       );
 
-      // Get the mock response that's linked to the request
       ModelContextProtocolServerResponse mockResponse = (ModelContextProtocolServerResponse) mockRequest.response();
-
-      // Set up a promise to track when the response is complete
       Promise<JsonObject> resultPromise = Promise.promise();
 
-      // Set up the response completion handler
       mockResponse.getResponseFuture().onComplete(ar -> {
         if (ar.succeeded()) {
           resultPromise.complete(ar.result().toJsonObject());
@@ -166,13 +132,10 @@ public class ModelContextProtocolBridge {
         }
       });
 
-      // Now pass the request to the gRPC server
-      // The server will read from the request and write to the response asynchronously
       mockRequest.pause();
       grpcServer.handle(mockRequest);
       mockRequest.resume();
 
-      // Return the future that will complete when the response is ready
       return resultPromise.future();
     }
   }

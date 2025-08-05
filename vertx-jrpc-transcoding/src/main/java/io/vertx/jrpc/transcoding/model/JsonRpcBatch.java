@@ -35,7 +35,7 @@ public class JsonRpcBatch {
    * @param isRequest true if this is a batch of requests, false if it's a batch of responses
    */
   private JsonRpcBatch(List<Object> items, boolean isRequest) {
-    this.items = Collections.unmodifiableList(new ArrayList<>(items));
+    this.items = List.copyOf(items);
     this.isRequest = isRequest;
   }
 

@@ -16,7 +16,7 @@ public class ToolsListHandler extends BaseHandler<ToolsListRequest, ToolsListRes
 
   public static final ServiceMethod<ToolsListRequest, ToolsListResponse> SERVICE_METHOD = ServiceMethod.server(
     ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
-    "Tools/List",
+    "ToolsList",
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(ToolsListRequest.newBuilder()));
 

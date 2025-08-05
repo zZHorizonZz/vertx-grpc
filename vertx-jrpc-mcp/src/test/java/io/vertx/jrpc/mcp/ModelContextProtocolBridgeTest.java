@@ -224,7 +224,7 @@ public class ModelContextProtocolBridgeTest {
     Async async = ctx.async();
 
     // Test that HTTP client tool can make calls to itself
-    ModelContextProtocolTool httpTool = bridge.createHttpClientTool(
+    ModelContextProtocolTool httpTool = bridge.createBridgeClientTool(
       "test-http-tool",
       "Ping",
       "Test HTTP client tool"
@@ -250,7 +250,7 @@ public class ModelContextProtocolBridgeTest {
     ModelContextProtocolServiceImpl mcpService = new ModelContextProtocolServiceImpl(vertx);
     ModelContextProtocolBridge bridgeWithoutHttp = new ModelContextProtocolBridge(vertx, mcpService);
 
-    ModelContextProtocolTool tool = bridgeWithoutHttp.createHttpClientTool(
+    ModelContextProtocolTool tool = bridgeWithoutHttp.createBridgeClientTool(
       "test-tool",
       "Ping",
       "Test tool"

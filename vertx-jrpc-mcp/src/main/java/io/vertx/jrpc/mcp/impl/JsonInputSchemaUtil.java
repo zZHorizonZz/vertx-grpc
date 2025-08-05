@@ -40,7 +40,7 @@ public class JsonInputSchemaUtil {
       }
     }
 
-    if (required.size() > 0) {
+    if (!required.isEmpty()) {
       schema.put("required", required);
     }
 
@@ -100,16 +100,12 @@ public class JsonInputSchemaUtil {
         schema.put("type", "number");
         break;
 
-      case INT64:
       case UINT64:
       case INT32:
-      case FIXED64:
       case FIXED32:
       case UINT32:
       case SFIXED32:
-      case SFIXED64:
       case SINT32:
-      case SINT64:
         schema.put("type", "integer");
         break;
 
@@ -117,6 +113,10 @@ public class JsonInputSchemaUtil {
         schema.put("type", "boolean");
         break;
 
+      case INT64:
+      case FIXED64:
+      case SFIXED64:
+      case SINT64:
       case STRING:
         schema.put("type", "string");
         break;

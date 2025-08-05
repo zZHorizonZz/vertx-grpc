@@ -2,6 +2,7 @@ package io.vertx.jrpc.transcoding.impl;
 
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.internal.http.HttpServerRequestInternal;
@@ -12,7 +13,7 @@ import io.vertx.jrpc.transcoding.model.JsonRpcRequest;
 
 public class JrpcHttpHandler implements Handler<HttpServerRequest> {
 
-  private GrpcServer grpcServer;
+  private final GrpcServer grpcServer;
 
   public JrpcHttpHandler(GrpcServer grpcServer) {
     this.grpcServer = grpcServer;
@@ -20,25 +21,16 @@ public class JrpcHttpHandler implements Handler<HttpServerRequest> {
 
   @Override
   public void handle(HttpServerRequest request) {
-    if (!(request instanceof HttpServerRequestInternal)) {
-      // Not HTTP, pass through to gRPC server
-      grpcServer.handle(request);
-      return;
-    }
-
     // Check if this is a JSON-RPC request
-    String contentType = request.getHeader("Content-Type");
+    String contentType = request.getHeader(HttpHeaders.CONTENT_TYPE);
     if (contentType == null || (!contentType.contains("application/json") && !contentType.contains("application/json-rpc"))) {
-      // Not JSON-RPC, pass through to gRPC server
       grpcServer.handle(request);
       return;
     }
 
-    // Buffer the request body to read the JSON-RPC method
     Buffer body = Buffer.buffer();
 
     request.resume().handler(body::appendBuffer);
-
     request.endHandler(v -> {
       try {
         JsonRpcRequest jsonRpcRequest = JsonRpcRequest.fromJson(body.toJsonObject());
@@ -49,9 +41,6 @@ public class JrpcHttpHandler implements Handler<HttpServerRequest> {
         }
 
         String serviceName = request.path().substring(1);
-        if (serviceName.isEmpty()) {
-          serviceName = jsonRpcRequest.getMethod().contains("/") ? jsonRpcRequest.getMethod().substring(0, jsonRpcRequest.getMethod().indexOf("/")) : request.path().substring(1);
-        }
 
         if (serviceName.isEmpty()) {
           sendJsonRpcError(request.response(), jsonRpcRequest.getId(), -32601, "Invalid Request: missing service name");
@@ -75,8 +64,6 @@ public class JrpcHttpHandler implements Handler<HttpServerRequest> {
         .put("code", code)
         .put("message", message));
 
-    response
-      .putHeader("Content-Type", "application/json-rpc")
-      .end(error.toBuffer());
+    response.putHeader("Content-Type", "application/json-rpc").end(error.toBuffer());
   }
 }
