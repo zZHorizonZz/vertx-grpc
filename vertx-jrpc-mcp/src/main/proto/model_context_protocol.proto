@@ -8,7 +8,76 @@ option java_outer_classname = "ModelContextProtocolProto";
 
 package mcp;
 
-// Message definitions for initialization & lifecycle
+// The ModelContextProtocolService provides methods for working with mcp
+service ModelContextProtocolService {
+  // Initialization & Lifecycle
+  rpc Initialize(InitializeRequest) returns (InitializeResponse);
+
+  rpc Ping(PingRequest) returns (PingResponse);
+
+  rpc Cancel(CancelRequest) returns (CancelResponse);
+
+  // Tools
+  rpc ToolsList(ToolsListRequest) returns (ToolsListResponse);
+
+  rpc ToolsCall(ToolsCallRequest) returns (ToolsCallResponse);
+
+  // Resources
+  rpc ResourcesList(ResourcesListRequest) returns (ResourcesListResponse);
+
+  rpc ResourcesRead(ResourcesReadRequest) returns (ResourcesReadResponse);
+
+  rpc ResourcesSubscribe(ResourcesSubscribeRequest) returns (ResourcesSubscribeResponse);
+
+  rpc ResourcesUnsubscribe(ResourcesUnsubscribeRequest) returns (ResourcesUnsubscribeResponse);
+
+  // Prompts
+  rpc PromptsList(PromptsListRequest) returns (PromptsListResponse);
+
+  rpc PromptsGet(PromptsGetRequest) returns (PromptsGetResponse);
+}
+
+message Annotation {
+  Role audience = 1 [json_name = "audience"];
+
+  enum Role {
+    USER = 0;
+    ASSISTANT = 1;
+  }
+
+  string last_modified = 2 [json_name = "lastModified"];
+
+  int32 priority = 3 [json_name = "priority"];
+}
+
+message Tool {
+  string name = 1 [json_name = "name"];
+  string title = 2 [json_name = "title"];
+  string description = 3 [json_name = "description"];
+
+  google.protobuf.Struct input_schema = 4 [json_name = "inputSchema"];
+  google.protobuf.Struct output_schema = 5 [json_name = "outputSchema"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message Resource {
+  string name = 1 [json_name = "name"];
+  string title = 2 [json_name = "title"];
+  string description = 3 [json_name = "description"];
+
+  google.protobuf.Struct input_schema = 4 [json_name = "inputSchema"];
+  google.protobuf.Struct output_schema = 5 [json_name = "outputSchema"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message Prompt {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+}
+
 message InitializeRequest {
   string protocol_version = 1  [json_name = "protocolVersion"];
 
@@ -46,11 +115,11 @@ message InitializedNotification {
 }
 
 message PingRequest {
-  int64 timestamp = 1;
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
 }
 
 message PingResponse {
-  int64 timestamp = 1;
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
 }
 
 message CancelRequest {
@@ -68,19 +137,9 @@ message ToolsListRequest {
   google.protobuf.Struct meta = 99 [json_name = "_meta"];
 }
 
-message Tool {
-  string name = 1 [json_name = "name"];
-  string title = 2 [json_name = "title"];
-  string description = 3 [json_name = "description"];
-
-  google.protobuf.Struct input_schema = 4 [json_name = "inputSchema"];
-  google.protobuf.Struct output_schema = 5 [json_name = "outputSchema"];
-
-  google.protobuf.Struct meta = 99 [json_name = "_meta"];
-}
-
 message ToolsListResponse {
   repeated Tool tools = 1 [json_name = "tools"];
+
   string next_cursor = 2 [json_name = "nextCursor"];
 
   google.protobuf.Struct meta = 99 [json_name = "_meta"];
@@ -105,18 +164,15 @@ message ToolsCallResponse {
 
 // Message definitions for resources
 message ResourcesListRequest {
-  string filter = 1;
-}
-
-message Resource {
-  string id = 1;
-  string name = 2;
-  string type = 3;
-  string description = 4;
+  string cursor = 1 [json_name = "_meta"];
 }
 
 message ResourcesListResponse {
-  repeated Resource resources = 1;
+  repeated Resource resources = 1 [json_name = "resources"];
+
+  string next_cursor = 2 [json_name = "nextCursor"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
 }
 
 message ResourcesReadRequest {
@@ -149,12 +205,6 @@ message ResourcesUnsubscribeResponse {
 message PromptsListRequest {
 }
 
-message Prompt {
-  string id = 1;
-  string name = 2;
-  string description = 3;
-}
-
 message PromptsListResponse {
   repeated Prompt prompts = 1;
 }
@@ -166,33 +216,4 @@ message PromptsGetRequest {
 message PromptsGetResponse {
   string content = 1;
   map<string, string> metadata = 2;
-}
-
-// The ModelContextProtocolService provides methods for working with mcp
-service ModelContextProtocolService {
-  // Initialization & Lifecycle
-  rpc Initialize(InitializeRequest) returns (InitializeResponse);
-
-  rpc Ping(PingRequest) returns (PingResponse);
-
-  rpc Cancel(CancelRequest) returns (CancelResponse);
-
-  // Tools
-  rpc ToolsList(ToolsListRequest) returns (ToolsListResponse);
-
-  rpc ToolsCall(ToolsCallRequest) returns (ToolsCallResponse);
-
-  // Resources
-  rpc ResourcesList(ResourcesListRequest) returns (ResourcesListResponse);
-
-  rpc ResourcesRead(ResourcesReadRequest) returns (ResourcesReadResponse);
-
-  rpc ResourcesSubscribe(ResourcesSubscribeRequest) returns (ResourcesSubscribeResponse);
-
-  rpc ResourcesUnsubscribe(ResourcesUnsubscribeRequest) returns (ResourcesUnsubscribeResponse);
-
-  // Prompts
-  rpc PromptsList(PromptsListRequest) returns (PromptsListResponse);
-
-  rpc PromptsGet(PromptsGetRequest) returns (PromptsGetResponse);
 }

@@ -3,7 +3,6 @@ package io.vertx.jrpc.mcp.impl;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Struct;
-import com.google.protobuf.Value;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.Structs;
 import com.google.protobuf.util.Values;
@@ -32,8 +31,7 @@ import java.util.stream.Collectors;
 public class ModelContextProtocolServiceImpl implements ModelContextProtocolService {
 
   private static final ServiceName SERVICE_NAME = ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService");
-  // We'll set this in the constructor after we have access to the proto classes
-  private static Descriptors.ServiceDescriptor SERVICE_DESCRIPTOR = ModelContextProtocolProto.getDescriptor().findServiceByName("ModelContextProtocolService");
+  private static final Descriptors.ServiceDescriptor SERVICE_DESCRIPTOR = ModelContextProtocolProto.getDescriptor().findServiceByName("ModelContextProtocolService");
 
   private final Vertx vertx;
 
@@ -42,8 +40,6 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
   private final List<ModelContextProtocolTool> availableTools = new ArrayList<>();
   private final List<ModelContextProtocolResource> availableResources = new ArrayList<>();
   private final List<ModelContextProtocolPrompt> availablePrompts = new ArrayList<>();
-
-  private GrpcServer server;
 
   /**
    * Creates a new ModelContextProtocolServiceImpl.
@@ -66,8 +62,6 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
 
   @Override
   public void bind(GrpcServer server) {
-    this.server = server;
-
     // Register all handlers with the server
     server.callHandler(InitializeHandler.SERVICE_METHOD, new InitializeHandler(server, this));
     server.callHandler(PingHandler.SERVICE_METHOD, new PingHandler(server, this));
@@ -121,9 +115,7 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
    * @return a future with the ping response
    */
   public Future<PingResponse> ping(PingRequest request) {
-    return Future.succeededFuture(PingResponse.newBuilder()
-      .setTimestamp(System.currentTimeMillis())
-      .build());
+    return Future.succeededFuture(PingResponse.newBuilder().build());
   }
 
   /**
@@ -198,7 +190,7 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
    * @return a future with the resources list response
    */
   public Future<ResourcesListResponse> resourcesList(ResourcesListRequest request) {
-    String filter = request.getFilter();
+    String filter = request.getCursor();
     List<ModelContextProtocolResource> filteredResources = availableResources;
 
     // Apply filter if provided
