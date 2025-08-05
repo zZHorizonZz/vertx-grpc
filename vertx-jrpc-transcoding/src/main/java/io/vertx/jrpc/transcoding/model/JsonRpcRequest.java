@@ -33,14 +33,14 @@ public class JsonRpcRequest {
   private static final String PARAMS_FIELD = "params";
   private static final String ID_FIELD = "id";
 
-  private final String id;
+  private final Integer id;
   private final String method;
   private final String jsonrpc;
 
   private final JsonArray unamedParams;
   private final JsonObject namedParams;
 
-  public JsonRpcRequest(String method, JsonArray unamedParams, String id) {
+  public JsonRpcRequest(String method, JsonArray unamedParams, Integer id) {
     this.jsonrpc = JSONRPC_VERSION;
     this.method = method;
     this.unamedParams = unamedParams;
@@ -48,7 +48,7 @@ public class JsonRpcRequest {
     this.id = id;
   }
 
-  public JsonRpcRequest(String method, JsonObject namedParams, String id) {
+  public JsonRpcRequest(String method, JsonObject namedParams, Integer id) {
     this.jsonrpc = JSONRPC_VERSION;
     this.method = method;
     this.unamedParams = null;
@@ -73,7 +73,7 @@ public class JsonRpcRequest {
     }
   }
 
-  public static JsonRpcRequest createRequest(String method, Object params, String id) {
+  public static JsonRpcRequest createRequest(String method, Object params, Integer id) {
     if (params instanceof JsonObject) {
       return new JsonRpcRequest(method, (JsonObject) params, id);
     } else if (params instanceof JsonArray) {
@@ -109,9 +109,9 @@ public class JsonRpcRequest {
       }
     }
 
-    String id = null;
+    Integer id = null;
     if (json.containsKey(ID_FIELD)) {
-      id = json.getString(ID_FIELD);
+      id = json.getInteger(ID_FIELD);
     }
 
     return createRequest(method, params, id);
@@ -188,7 +188,7 @@ public class JsonRpcRequest {
   /**
    * @return the request identifier (can be String, Number, or null for notifications)
    */
-  public String getId() {
+  public Integer getId() {
     return id;
   }
 

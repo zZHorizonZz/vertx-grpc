@@ -16,7 +16,7 @@ public class ResourcesListHandler extends BaseHandler<ResourcesListRequest, Reso
 
   public static final ServiceMethod<ResourcesListRequest, ResourcesListResponse> SERVICE_METHOD = ServiceMethod.server(
     ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
-    "ResourcesList",
+    "Resources/List",
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(ResourcesListRequest.newBuilder()));
 

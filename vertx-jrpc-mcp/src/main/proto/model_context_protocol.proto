@@ -20,6 +20,8 @@ message InitializeRequest {
   }
 
   ClientInfo client_info = 3  [json_name = "clientInfo"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
 }
 
 message InitializeResponse {
@@ -35,6 +37,8 @@ message InitializeResponse {
   ServerInfo server_info = 3  [json_name = "serverInfo"];
 
   string instructions = 4 [json_name = "instructions"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
 }
 
 message InitializedNotification {
@@ -59,28 +63,44 @@ message CancelResponse {
 
 // Message definitions for tools
 message ToolsListRequest {
+  string cursor = 1 [json_name = "cursor"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
 }
 
 message Tool {
-  string id = 1;
-  string name = 2;
-  string description = 3;
-  map<string, string> parameters = 4;
+  string name = 1 [json_name = "name"];
+  string title = 2 [json_name = "title"];
+  string description = 3 [json_name = "description"];
+
+  google.protobuf.Struct input_schema = 4 [json_name = "inputSchema"];
+  google.protobuf.Struct output_schema = 5 [json_name = "outputSchema"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
 }
 
 message ToolsListResponse {
-  repeated Tool tools = 1;
+  repeated Tool tools = 1 [json_name = "tools"];
+  string next_cursor = 2 [json_name = "nextCursor"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
 }
 
 message ToolsCallRequest {
-  string tool_id = 1;
-  map<string, string> parameters = 2;
+  string name = 1 [json_name = "name"];
+
+  google.protobuf.Struct arguments = 2 [json_name = "arguments"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
 }
 
 message ToolsCallResponse {
-  bool success = 1;
-  string result = 2;
-  string error = 3;
+  repeated google.protobuf.Struct content = 1 [json_name = "content"];
+  google.protobuf.Struct structured_content = 2 [json_name = "structuredContent"];
+
+  bool is_error = 3 [json_name = "isError"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
 }
 
 // Message definitions for resources

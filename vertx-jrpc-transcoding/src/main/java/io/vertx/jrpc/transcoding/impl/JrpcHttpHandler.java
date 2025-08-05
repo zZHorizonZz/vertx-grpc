@@ -1,16 +1,9 @@
 package io.vertx.jrpc.transcoding.impl;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.http.DefaultFullHttpRequest;
-import io.netty.handler.codec.http.EmptyHttpHeaders;
-import io.netty.handler.codec.http.HttpHeadersFactory;
-import io.netty.handler.codec.http.HttpVersion;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.http.impl.Http1xServerRequest;
 import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.core.json.JsonObject;
 import io.vertx.grpc.common.ServiceName;
@@ -55,21 +48,26 @@ public class JrpcHttpHandler implements Handler<HttpServerRequest> {
           return;
         }
 
-        String serviceName = jsonRpcRequest.getMethod().contains("/") ? jsonRpcRequest.getMethod().substring(0, jsonRpcRequest.getMethod().indexOf("/")) : request.path().substring(1);
+        String serviceName = request.path().substring(1);
+        if (serviceName.isEmpty()) {
+          serviceName = jsonRpcRequest.getMethod().contains("/") ? jsonRpcRequest.getMethod().substring(0, jsonRpcRequest.getMethod().indexOf("/")) : request.path().substring(1);
+        }
+
         if (serviceName.isEmpty()) {
           sendJsonRpcError(request.response(), jsonRpcRequest.getId(), -32601, "Invalid Request: missing service name");
           return;
         }
 
-        HttpProxyServerRequest transformedRequest = new HttpProxyServerRequest((HttpServerRequestInternal) request, jsonRpcRequest.getMethod(), ServiceName.create(serviceName), jsonRpcRequest);
+        HttpProxyServerRequest transformedRequest = new HttpProxyServerRequest((HttpServerRequestInternal) request, jsonRpcRequest.getMethod(), ServiceName.create(serviceName),
+          jsonRpcRequest);
         grpcServer.handle(transformedRequest);
       } catch (Exception e) {
-        sendJsonRpcError(request.response(), "null", -32700, "Parse error: " + e.getMessage());
+        sendJsonRpcError(request.response(), null, -32700, "Parse error: " + e.getMessage());
       }
     });
   }
 
-  private void sendJsonRpcError(HttpServerResponse response, String id, int code, String message) {
+  private void sendJsonRpcError(HttpServerResponse response, Integer id, int code, String message) {
     JsonObject error = new JsonObject()
       .put("jsonrpc", "2.0")
       .put("id", id)

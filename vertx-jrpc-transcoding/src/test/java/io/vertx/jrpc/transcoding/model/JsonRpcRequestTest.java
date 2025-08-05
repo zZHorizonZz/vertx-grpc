@@ -23,11 +23,11 @@ public class JsonRpcRequestTest {
 
   @Test
   public void testCreateRequest() {
-    JsonRpcRequest request = new JsonRpcRequest("subtract", new JsonArray().add(42).add(23), "1");
+    JsonRpcRequest request = new JsonRpcRequest("subtract", new JsonArray().add(42).add(23), 1);
     assertEquals("2.0", request.getJsonrpc());
     assertEquals("subtract", request.getMethod());
     assertEquals(new JsonArray().add(42).add(23), request.getParams());
-    assertEquals("1", request.getId());
+    assertEquals(1, request.getId().intValue());
     assertFalse(request.isNotification());
   }
 
@@ -53,7 +53,7 @@ public class JsonRpcRequestTest {
     assertEquals("2.0", request.getJsonrpc());
     assertEquals("subtract", request.getMethod());
     assertEquals(new JsonArray().add(42).add(23), request.getParams());
-    assertEquals("1", request.getId());
+    assertEquals(1, request.getId().intValue());
   }
 
   @Test
@@ -70,17 +70,17 @@ public class JsonRpcRequestTest {
     JsonObject params = (JsonObject) request.getParams();
     assertEquals(23, params.getInteger("subtrahend").intValue());
     assertEquals(42, params.getInteger("minuend").intValue());
-    assertEquals("3", request.getId());
+    assertEquals(3, request.getId().intValue());
   }
 
   @Test
   public void testToJson() {
-    JsonRpcRequest request = new JsonRpcRequest("subtract", new JsonArray().add(42).add(23), "1");
+    JsonRpcRequest request = new JsonRpcRequest("subtract", new JsonArray().add(42).add(23), 1);
     JsonObject json = request.toJson();
     assertEquals("2.0", json.getString("jsonrpc"));
     assertEquals("subtract", json.getString("method"));
     assertEquals(new JsonArray().add(42).add(23), json.getJsonArray("params"));
-    assertEquals("1", json.getString("id"));
+    assertEquals(1, json.getInteger("id").intValue());
   }
 
   @Test

@@ -28,7 +28,7 @@ public interface GrpcMessageEncoder<T> {
             if (msg instanceof MessageOrBuilder) {
               MessageOrBuilder mob = (MessageOrBuilder) msg;
               try {
-                String res = JsonFormat.printer().print(mob);
+                String res = JsonFormat.printer().omittingInsignificantWhitespace().print(mob);
                 return GrpcMessage.message("identity", WireFormat.JSON, Buffer.buffer(res));
               } catch (InvalidProtocolBufferException e) {
                 throw new CodecException(e);

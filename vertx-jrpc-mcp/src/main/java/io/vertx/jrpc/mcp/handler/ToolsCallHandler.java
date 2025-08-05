@@ -16,7 +16,7 @@ public class ToolsCallHandler extends BaseHandler<ToolsCallRequest, ToolsCallRes
 
   public static final ServiceMethod<ToolsCallRequest, ToolsCallResponse> SERVICE_METHOD = ServiceMethod.server(
     ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
-    "ToolsCall",
+    "Tools/Call",
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(ToolsCallRequest.newBuilder()));
 

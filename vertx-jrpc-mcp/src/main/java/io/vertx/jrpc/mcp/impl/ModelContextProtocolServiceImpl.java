@@ -3,7 +3,10 @@ package io.vertx.jrpc.mcp.impl;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Struct;
+import com.google.protobuf.Value;
 import com.google.protobuf.util.JsonFormat;
+import com.google.protobuf.util.Structs;
+import com.google.protobuf.util.Values;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -16,7 +19,10 @@ import io.vertx.jrpc.mcp.ModelContextProtocolTool;
 import io.vertx.jrpc.mcp.handler.*;
 import io.vertx.jrpc.mcp.proto.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -154,30 +160,35 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
    * @return a future with the tools call response
    */
   public Future<ToolsCallResponse> toolsCall(ToolsCallRequest request) {
-    String toolId = request.getToolId();
-    Map<String, String> parameters = request.getParametersMap();
-
-    // Check if tool exists
-    Optional<ModelContextProtocolTool> toolExists = availableTools.stream().filter(tool -> tool.id().equals(toolId)).findAny();
-
-    if (toolExists.isEmpty()) {
-      return Future.succeededFuture(ToolsCallResponse.newBuilder()
-        .setSuccess(false)
-        .setError("Tool not found: " + toolId)
-        .build());
+    String name = request.getName();
+    JsonObject parameters;
+    try {
+      String arguments = JsonFormat.printer().print(request.getArguments());
+      parameters = new JsonObject(arguments);
+    } catch (InvalidProtocolBufferException e) {
+      throw new RuntimeException(e);
     }
 
-    JsonObject toolParameters = new JsonObject(new HashMap<>(parameters));
+    // Check if tool exists
+    Optional<ModelContextProtocolTool> toolExists = availableTools.stream().filter(tool -> tool.id().equals(name)).findAny();
 
-    return toolExists.get().apply(toolParameters)
-      .map(result -> ToolsCallResponse.newBuilder()
-        .setSuccess(true)
-        .setResult(new JsonObject()
-          .put("toolId", toolId)
-          .put("parameters", new JsonObject(new HashMap<>(parameters)))
-          .put("result", result)
-          .encode())
-        .build());
+    if (toolExists.isEmpty()) {
+      throw new RuntimeException("Tool not found: " + name);
+    }
+
+    return toolExists.get().apply(parameters).map(result -> {
+      Struct.Builder content = Struct.newBuilder();
+      try {
+        JsonFormat.parser().merge(result.encode(), content);
+      } catch (InvalidProtocolBufferException e) {
+        throw new RuntimeException(e);
+      }
+
+      return ToolsCallResponse.newBuilder()
+        .addContent(Structs.of("type", Values.of("text"), "text", Values.of(result.encode())))
+        .setStructuredContent(content)
+        .build();
+    });
   }
 
   /**
@@ -340,12 +351,13 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
   public JsonObject getCapabilities() {
     JsonObject capabilities = new JsonObject();
 
-    capabilities.put("protocol_version", "1.0");
-    capabilities.put("supports_streaming", "false");
+    //capabilities.put("protocol_version", "1.0");
+    //capabilities.put("supports_streaming", "false");
 
-    capabilities.put("resources", new JsonObject());
-    capabilities.put("prompts", new JsonObject());
-    capabilities.put("tools", new JsonObject());
+    capabilities.put("completions", new JsonObject());
+    capabilities.put("tools", new JsonObject().put("listChanged", true));
+    capabilities.put("prompts", new JsonObject().put("listChanged", true));
+    capabilities.put("resources", new JsonObject().put("listChanged", true));
 
     return capabilities;
   }

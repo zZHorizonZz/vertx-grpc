@@ -11,6 +11,7 @@
 package io.vertx.jrpc.transcoding.impl;
 
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.http.HttpServerRequestInternal;
@@ -55,13 +56,14 @@ public class JrpcHttpInvoker implements GrpcHttpInvoker {
    */
   @Override
   public <Req, Resp> GrpcInvocation<Req, Resp> accept(HttpServerRequest request, ServiceMethod<Req, Resp> serviceMethod) {
-    // Only accept POST requests with application/json content type
-    if (!request.method().name().equals("POST")) {
+    String contentType = request.getHeader(HttpHeaders.CONTENT_TYPE);
+    String acceptContentType = request.getHeader(HttpHeaders.ACCEPT);
+
+    if (contentType == null || !contentType.startsWith("application/json")) {
       return null;
     }
 
-    String contentType = request.getHeader("Content-Type");
-    if (contentType == null || !contentType.startsWith("application/json")) {
+    if (acceptContentType == null || (!acceptContentType.contains("application/json") && !acceptContentType.contains("text/event-stream"))) {
       return null;
     }
 

@@ -96,7 +96,7 @@ public class JrpcTranscodingTest {
     JsonRpcRequest request = new JsonRpcRequest(
       "UnaryCall",
       new JsonArray().add("Julien"),
-      "1"
+      1
     );
 
     // Send the request
@@ -104,7 +104,7 @@ public class JrpcTranscodingTest {
       .onComplete(ctx.asyncAssertSuccess(response -> {
         ctx.assertEquals("2.0", response.getJsonrpc());
         ctx.assertEquals("Hello Julien", ((JsonObject) response.getResult()).getString("payload"));
-        ctx.assertEquals("1", response.getId());
+        ctx.assertEquals(1, response.getId());
         ctx.assertNull(response.getError());
         ctx.assertTrue(response.isSuccess());
         async.complete();
@@ -121,7 +121,7 @@ public class JrpcTranscodingTest {
     JsonRpcRequest request = new JsonRpcRequest(
       "UnaryCall",
       new JsonObject().put("payload", "Julien"),
-      "2"
+      2
     );
 
     // Send the request
@@ -130,7 +130,7 @@ public class JrpcTranscodingTest {
         ctx.assertEquals("2.0", response.getJsonrpc());
         ctx.assertEquals(JsonObject.class, response.getResult().getClass());
         ctx.assertEquals("Hello Julien", ((JsonObject) response.getResult()).getString("payload"));
-        ctx.assertEquals("2", response.getId());
+        ctx.assertEquals(2, response.getId());
         ctx.assertNull(response.getError());
         ctx.assertTrue(response.isSuccess());
         async.complete();
@@ -148,7 +148,7 @@ public class JrpcTranscodingTest {
     JsonRpcRequest request = new JsonRpcRequest(
       "nonExistentMethod",
       new JsonArray().add(40).add(2),
-      "3"
+      3
     );
 
     // Send the request

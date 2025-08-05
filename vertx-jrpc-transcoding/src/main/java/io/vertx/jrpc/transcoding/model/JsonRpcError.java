@@ -32,8 +32,10 @@ public class JsonRpcError {
   public static final int PARSE_ERROR = -32700;
   public static final int INVALID_REQUEST = -32600;
   public static final int METHOD_NOT_FOUND = -32601;
+  public static final int METHOD_NOT_ALLOWED = -32000;
   public static final int INVALID_PARAMS = -32602;
   public static final int INTERNAL_ERROR = -32603;
+
   // Server error codes range from -32000 to -32099
   public static final int SERVER_ERROR_MIN = -32099;
   public static final int SERVER_ERROR_MAX = -32000;
@@ -110,6 +112,15 @@ public class JsonRpcError {
    */
   public static JsonRpcError methodNotFound() {
     return new JsonRpcError(METHOD_NOT_FOUND, "Method not found");
+  }
+
+  /**
+   * Creates a method not allowed error (-32000).
+   *
+   * @return a new method not allowed error
+   */
+  public static JsonRpcError methodNotAllowed() {
+    return new JsonRpcError(METHOD_NOT_ALLOWED, "Method not allowed");
   }
 
   /**

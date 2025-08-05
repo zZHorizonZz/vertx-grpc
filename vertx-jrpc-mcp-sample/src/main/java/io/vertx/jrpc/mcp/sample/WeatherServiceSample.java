@@ -5,6 +5,7 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolBridge;
+import io.vertx.jrpc.mcp.impl.ModelContextProtocolProxyHandler;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
 import io.vertx.jrpc.transcoding.impl.JrpcHttpHandler;
 
@@ -44,7 +45,7 @@ public class WeatherServiceSample {
 
     // Create HTTP server with JSON-RPC handler
     HttpServer httpServer = vertx.createHttpServer(new HttpServerOptions().setPort(PORT))
-      .requestHandler(new JrpcHttpHandler(grpcServer));
+      .requestHandler(new ModelContextProtocolProxyHandler(new JrpcHttpHandler(grpcServer)));
 
     // Start the server
     httpServer.listen()
