@@ -15,7 +15,7 @@ import java.nio.channels.FileChannel;
 import java.util.Collections;
 import java.util.Set;
 
-public class ModelContextProtocolServerResponse implements HttpServerResponse {
+class ModelContextProtocolServerResponse implements HttpServerResponse {
   private final Promise<Buffer> responsePromise = Promise.promise();
   private final Buffer responseBuffer = Buffer.buffer();
   private final MultiMap headers = MultiMap.caseInsensitiveMultiMap();

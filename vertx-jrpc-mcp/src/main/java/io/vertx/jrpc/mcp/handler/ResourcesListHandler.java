@@ -3,9 +3,8 @@ package io.vertx.jrpc.mcp.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.jrpc.mcp.ModelContextProtocolResource;
+import io.vertx.jrpc.mcp.ModelContextProtocolResourceProvider;
 import io.vertx.jrpc.mcp.ModelContextProtocolService;
-import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
 import io.vertx.jrpc.mcp.proto.ResourcesListRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesListResponse;
 
@@ -38,7 +37,7 @@ public class ResourcesListHandler extends BaseHandler<ResourcesListRequest, Reso
     request.handler(req -> {
       try {
         String filter = req.getCursor();
-        List<ModelContextProtocolResource> resources = service.resourcesList();
+        List<ModelContextProtocolResourceProvider> resources = service.resourcesList();
         if (!filter.isEmpty()) {
           resources = resources.stream()
             .filter(resource -> resource.resource().getName().contains(filter) ||
@@ -46,7 +45,7 @@ public class ResourcesListHandler extends BaseHandler<ResourcesListRequest, Reso
             .collect(Collectors.toList());
         }
         ResourcesListResponse response = ResourcesListResponse.newBuilder()
-          .addAllResources(resources.stream().map(ModelContextProtocolResource::resource).collect(Collectors.toUnmodifiableSet()))
+          .addAllResources(resources.stream().map(ModelContextProtocolResourceProvider::resource).collect(Collectors.toUnmodifiableSet()))
           .build();
         request.response().end(response);
       } catch (Exception e) {

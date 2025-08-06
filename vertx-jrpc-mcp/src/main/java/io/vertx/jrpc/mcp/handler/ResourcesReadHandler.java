@@ -3,9 +3,8 @@ package io.vertx.jrpc.mcp.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.jrpc.mcp.ModelContextProtocolResource;
+import io.vertx.jrpc.mcp.ModelContextProtocolResourceProvider;
 import io.vertx.jrpc.mcp.ModelContextProtocolService;
-import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
 import io.vertx.jrpc.mcp.proto.ResourcesReadRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesReadResponse;
 
@@ -37,7 +36,7 @@ public class ResourcesReadHandler extends BaseHandler<ResourcesReadRequest, Reso
     request.handler(req -> {
       try {
         String resourceId = req.getResourceId();
-        Optional<ModelContextProtocolResource> res = service.resourcesList().stream()
+        Optional<ModelContextProtocolResourceProvider> res = service.resourcesList().stream()
           .filter(r -> r.id().equals(resourceId))
           .findFirst();
         if (res.isEmpty()) {

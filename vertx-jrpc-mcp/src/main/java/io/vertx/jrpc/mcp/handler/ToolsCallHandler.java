@@ -10,9 +10,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
+import io.vertx.jrpc.mcp.ModelContextProtocolDataType;
 import io.vertx.jrpc.mcp.ModelContextProtocolService;
-import io.vertx.jrpc.mcp.ModelContextProtocolTool;
-import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
 import io.vertx.jrpc.mcp.proto.ToolsCallRequest;
 import io.vertx.jrpc.mcp.proto.ToolsCallResponse;
 
@@ -74,14 +73,14 @@ public class ToolsCallHandler extends BaseHandler<ToolsCallRequest, ToolsCallRes
   /**
    * Builds the response based on the content data type.
    */
-  private ToolsCallResponse buildResponse(ModelContextProtocolTool.ContentDataType result) {
+  private ToolsCallResponse buildResponse(ModelContextProtocolDataType result) {
     ToolsCallResponse.Builder responseBuilder = ToolsCallResponse.newBuilder();
 
-    if (result instanceof ModelContextProtocolTool.StructuredJsonContentDataType) {
+    if (result instanceof ModelContextProtocolDataType.StructuredJsonContentDataType) {
       return buildStructuredResponse(responseBuilder, result);
     }
 
-    if (result instanceof ModelContextProtocolTool.UnstructuredContentDataType) {
+    if (result instanceof ModelContextProtocolDataType.UnstructuredContentDataType) {
       return buildUnstructuredResponse(responseBuilder, result);
     }
 
@@ -91,7 +90,7 @@ public class ToolsCallHandler extends BaseHandler<ToolsCallRequest, ToolsCallRes
   /**
    * Builds a structured JSON response.
    */
-  private ToolsCallResponse buildStructuredResponse(ToolsCallResponse.Builder builder, ModelContextProtocolTool.ContentDataType result) {
+  private ToolsCallResponse buildStructuredResponse(ToolsCallResponse.Builder builder, ModelContextProtocolDataType result) {
     Struct structuredContent = parseToStruct(result.toJson().encode());
     List<Struct> content = createTextContent(result.toJson().encode());
     return builder.addAllContent(content).setStructuredContent(structuredContent).build();
@@ -100,8 +99,8 @@ public class ToolsCallHandler extends BaseHandler<ToolsCallRequest, ToolsCallRes
   /**
    * Builds an unstructured response with multiple content items.
    */
-  private ToolsCallResponse buildUnstructuredResponse(ToolsCallResponse.Builder builder, ModelContextProtocolTool.ContentDataType result) {
-    ModelContextProtocolTool.UnstructuredContentDataType unstructured = (ModelContextProtocolTool.UnstructuredContentDataType) result;
+  private ToolsCallResponse buildUnstructuredResponse(ToolsCallResponse.Builder builder, ModelContextProtocolDataType result) {
+    ModelContextProtocolDataType.UnstructuredContentDataType unstructured = (ModelContextProtocolDataType.UnstructuredContentDataType) result;
     List<Struct> content = unstructured.content().stream()
       .map(item -> parseToStruct(item.toJson().encode()))
       .collect(Collectors.toList());
@@ -112,7 +111,7 @@ public class ToolsCallHandler extends BaseHandler<ToolsCallRequest, ToolsCallRes
   /**
    * Builds a simple response with single content.
    */
-  private ToolsCallResponse buildSimpleResponse(ToolsCallResponse.Builder builder, ModelContextProtocolTool.ContentDataType result) {
+  private ToolsCallResponse buildSimpleResponse(ToolsCallResponse.Builder builder, ModelContextProtocolDataType result) {
     Struct content = parseToStruct(result.toJson().encode());
     return builder.addContent(content).build();
   }

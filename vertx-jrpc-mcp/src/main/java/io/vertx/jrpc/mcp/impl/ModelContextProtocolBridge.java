@@ -9,11 +9,15 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.Service;
-import io.vertx.jrpc.mcp.ModelContextProtocolService;
-import io.vertx.jrpc.mcp.ModelContextProtocolTool;
+import io.vertx.jrpc.mcp.*;
 import io.vertx.jrpc.mcp.handler.*;
 import io.vertx.jrpc.mcp.proto.ModelContextProtocolProto;
-import io.vertx.json.schema.JsonSchema;
+import io.vertx.json.schema.*;
+import io.vertx.mcp.proto.ModelContextProtocolAnnotations;
+
+import java.net.URI;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ModelContextProtocolBridge implements Service {
 
@@ -44,7 +48,14 @@ public class ModelContextProtocolBridge implements Service {
   public void bind(GrpcServer server) {
     this.grpcServer = server;
 
+    ModelContextProtocolResourceProvider resource = new BridgeClientResourceProvider();
+    this.service.registerResourceProvider(resource);
+
     grpcServer.services().forEach(service -> service.methodDescriptors().forEach(methodDescriptor -> {
+      if (methodDescriptor.getOptions().hasExtension(ModelContextProtocolAnnotations.mcpResource)) {
+        return;
+      }
+
       ModelContextProtocolTool tool = createBridgeClientTool(
         service.name().fullyQualifiedName() + "/" + methodDescriptor.getName(),
         methodDescriptor.getName(),
@@ -85,6 +96,9 @@ public class ModelContextProtocolBridge implements Service {
     private final JsonSchema inputSchema;
     private final JsonSchema outputSchema;
 
+    private final Validator inputValidator;
+    private final Validator outputValidator;
+
     public BridgeClientTool(String fqn, String name, String title, String description, Descriptors.MethodDescriptor methodDescriptor) {
       this.fqn = fqn;
       this.name = name;
@@ -96,6 +110,9 @@ public class ModelContextProtocolBridge implements Service {
 
       this.inputDescriptor = methodDescriptor.getInputType();
       this.outputDescriptor = methodDescriptor.getOutputType();
+
+      this.inputValidator = Validator.create(inputSchema, new JsonSchemaOptions().setBaseUri("http://localhost/").setDraft(Draft.DRAFT7));
+      this.outputValidator = Validator.create(outputSchema, new JsonSchemaOptions().setBaseUri("http://localhost/").setDraft(Draft.DRAFT7));
     }
 
     @Override
@@ -138,7 +155,12 @@ public class ModelContextProtocolBridge implements Service {
     }
 
     @Override
-    public Future<ModelContextProtocolTool.ContentDataType> apply(JsonObject parameters) {
+    public Future<ModelContextProtocolDataType> apply(JsonObject parameters) {
+      OutputUnit result = inputValidator.validate(parameters);
+      if (!result.getValid()) {
+        return Future.failedFuture(result.getErrors().toString());
+      }
+
       ModelContextProtocolServerRequest mockRequest = new ModelContextProtocolServerRequest(
         HttpMethod.POST,
         "/" + fqn,
@@ -147,23 +169,31 @@ public class ModelContextProtocolBridge implements Service {
       );
 
       ModelContextProtocolServerResponse mockResponse = (ModelContextProtocolServerResponse) mockRequest.response();
-      Promise<ModelContextProtocolTool.ContentDataType> resultPromise = Promise.promise();
+      Promise<ModelContextProtocolDataType> resultPromise = Promise.promise();
 
       mockResponse.getResponseFuture().onComplete(ar -> {
         if (ar.succeeded()) {
           if (outputDescriptor.equals(SchemaUtil.CONTENT_DESCRIPTOR)) {
-            resultPromise.complete(UnstructuredContentDataType.create(ar.result().toJsonObject()));
+            resultPromise.complete(ModelContextProtocolDataType.UnstructuredContentDataType.create(ar.result().toJsonObject()));
           } else if (outputDescriptor.equals(SchemaUtil.TEXT_CONTENT_DESCRIPTOR)) {
-            resultPromise.complete(TextContentDataType.create(ar.result().toJsonObject()));
+            resultPromise.complete(ModelContextProtocolDataType.TextContentDataType.create(ar.result().toJsonObject()));
           } else if (outputDescriptor.equals(SchemaUtil.IMAGE_CONTENT_DESCRIPTOR)) {
-            resultPromise.complete(ImageContentDataType.create(ar.result().toJsonObject()));
+            resultPromise.complete(ModelContextProtocolDataType.ImageContentDataType.create(ar.result().toJsonObject()));
           } else if (outputDescriptor.equals(SchemaUtil.AUDIO_CONTENT_DESCRIPTOR)) {
-            resultPromise.complete(AudioContentDataType.create(ar.result().toJsonObject()));
+            resultPromise.complete(ModelContextProtocolDataType.AudioContentDataType.create(ar.result().toJsonObject()));
           } else if (outputDescriptor.equals(SchemaUtil.RESOURCE_LINK_CONTENT_DESCRIPTOR)) {
-            resultPromise.complete(ResourceLinkContentDataType.create(ar.result().toJsonObject()));
+            resultPromise.complete(ModelContextProtocolDataType.ResourceLinkContentDataType.create(ar.result().toJsonObject()));
           }
 
-          resultPromise.complete(StructuredJsonContentDataType.create(ar.result().toJsonObject()));
+          if (isStructured() && outputSchema != null) {
+            OutputUnit outputResult = outputValidator.validate(ar.result().toJsonObject());
+            if (!outputResult.getValid()) {
+              resultPromise.fail(outputResult.getErrors().toString());
+              return;
+            }
+          }
+
+          resultPromise.complete(ModelContextProtocolDataType.StructuredJsonContentDataType.create(ar.result().toJsonObject()));
         } else {
           resultPromise.fail(ar.cause());
         }
@@ -174,6 +204,25 @@ public class ModelContextProtocolBridge implements Service {
       mockRequest.resume();
 
       return resultPromise.future();
+    }
+  }
+
+  private class BridgeClientResourceProvider implements ModelContextProtocolResourceProvider {
+
+    private final List<Service> services;
+    private final List<Descriptors.MethodDescriptor> methodDescriptors;
+
+    public BridgeClientResourceProvider() {
+      this.services = grpcServer.services();
+      this.methodDescriptors = services.stream()
+        .flatMap(service -> service.methodDescriptors().stream())
+        .filter(methodDescriptor -> methodDescriptor.getOptions().hasExtension(ModelContextProtocolAnnotations.mcpResource))
+        .collect(Collectors.toList());
+    }
+
+    @Override
+    public Future<ModelContextProtocolResource> apply(URI uri) {
+      return null;
     }
   }
 }

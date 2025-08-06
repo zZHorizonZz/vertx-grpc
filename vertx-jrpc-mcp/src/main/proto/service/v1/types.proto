@@ -128,3 +128,22 @@ message ContentItem {
 message Content {
   repeated ContentItem content = 1;
 }
+
+message TextResourceContent {
+  string uri = 1 [json_name = "uri"];
+  string text = 2 [json_name = "text"];
+  string mime_type = 3 [json_name = "mimeType"];
+}
+
+message BlobResourceContent {
+  string uri = 1 [json_name = "uri"];
+  string blob = 2 [json_name = "blob"];
+  string mime_type = 3 [json_name = "mimeType"];
+}
+
+message ResourceContent {
+  oneof content {
+    TextResourceContent text = 1;
+    BlobResourceContent blob = 2;
+  }
+}

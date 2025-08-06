@@ -17,17 +17,17 @@ public interface ModelContextProtocolService {
 
   void registerTool(ModelContextProtocolTool tool);
 
-  void registerResource(ModelContextProtocolResource resource);
+  void registerResourceProvider(ModelContextProtocolResourceProvider resource);
 
-  void registerPrompt(ModelContextProtocolPrompt prompt);
+  void registerPromptProvider(ModelContextProtocolPromptProvider prompt);
 
   List<ModelContextProtocolTool> toolsList();
 
-  List<ModelContextProtocolResource> resourcesList();
+  List<ModelContextProtocolResourceProvider> resourcesList();
 
-  List<ModelContextProtocolPrompt> promptsList();
+  List<ModelContextProtocolPromptProvider> promptsList();
 
-  Future<ModelContextProtocolTool.ContentDataType> executeTool(String tool, JsonObject parameters);
+  Future<ModelContextProtocolDataType> executeTool(String tool, JsonObject parameters);
 
   Future<JsonObject> executeResource(String resource, JsonObject parameters);
 

@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-public class ModelContextProtocolServerRequest extends HttpServerRequestInternal implements HttpServerRequest {
+class ModelContextProtocolServerRequest extends HttpServerRequestInternal implements HttpServerRequest {
   private final HttpMethod method;
   private final String path;
   private final Buffer body;
@@ -36,7 +36,7 @@ public class ModelContextProtocolServerRequest extends HttpServerRequestInternal
   private boolean ended = false;
   private boolean paused = false;
 
-  public ModelContextProtocolServerRequest(HttpMethod method, String path, Buffer body, Context context) {
+  ModelContextProtocolServerRequest(HttpMethod method, String path, Buffer body, Context context) {
     this.method = method;
     this.path = path;
     this.body = body;

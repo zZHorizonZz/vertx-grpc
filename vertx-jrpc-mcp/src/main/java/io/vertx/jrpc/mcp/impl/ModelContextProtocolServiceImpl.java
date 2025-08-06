@@ -6,12 +6,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.grpc.common.ServiceName;
-import io.vertx.grpc.server.GrpcServer;
-import io.vertx.jrpc.mcp.ModelContextProtocolPrompt;
-import io.vertx.jrpc.mcp.ModelContextProtocolResource;
-import io.vertx.jrpc.mcp.ModelContextProtocolService;
-import io.vertx.jrpc.mcp.ModelContextProtocolTool;
-import io.vertx.jrpc.mcp.handler.*;
+import io.vertx.jrpc.mcp.*;
 import io.vertx.jrpc.mcp.proto.ModelContextProtocolProto;
 
 import java.util.*;
@@ -30,8 +25,8 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
   private final Map<Integer, Promise<?>> activeRequests = new ConcurrentHashMap<>();
 
   private final List<ModelContextProtocolTool> availableTools = new ArrayList<>();
-  private final List<ModelContextProtocolResource> availableResources = new ArrayList<>();
-  private final List<ModelContextProtocolPrompt> availablePrompts = new ArrayList<>();
+  private final List<ModelContextProtocolResourceProvider> availableResourceProviders = new ArrayList<>();
+  private final List<ModelContextProtocolPromptProvider> availablePromptProviders = new ArrayList<>();
 
   /**
    * Creates a new ModelContextProtocolServiceImpl.
@@ -75,13 +70,13 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
   }
 
   @Override
-  public void registerResource(ModelContextProtocolResource resource) {
-    availableResources.add(resource);
+  public void registerResourceProvider(ModelContextProtocolResourceProvider resource) {
+    availableResourceProviders.add(resource);
   }
 
   @Override
-  public void registerPrompt(ModelContextProtocolPrompt prompt) {
-    availablePrompts.add(prompt);
+  public void registerPromptProvider(ModelContextProtocolPromptProvider prompt) {
+    availablePromptProviders.add(prompt);
   }
 
   @Override
@@ -90,17 +85,17 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
   }
 
   @Override
-  public List<ModelContextProtocolResource> resourcesList() {
-    return Collections.unmodifiableList(availableResources);
+  public List<ModelContextProtocolResourceProvider> resourcesList() {
+    return Collections.unmodifiableList(availableResourceProviders);
   }
 
   @Override
-  public List<ModelContextProtocolPrompt> promptsList() {
-    return Collections.unmodifiableList(availablePrompts);
+  public List<ModelContextProtocolPromptProvider> promptsList() {
+    return Collections.unmodifiableList(availablePromptProviders);
   }
 
   @Override
-  public Future<ModelContextProtocolTool.ContentDataType> executeTool(String tool, JsonObject parameters) {
+  public Future<ModelContextProtocolDataType> executeTool(String tool, JsonObject parameters) {
     Optional<ModelContextProtocolTool> toolExists = availableTools.stream().filter(t -> t.id().equals(tool)).findFirst();
 
     if (toolExists.isEmpty()) {

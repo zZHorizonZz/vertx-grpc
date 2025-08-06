@@ -3,9 +3,8 @@ package io.vertx.jrpc.mcp.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.jrpc.mcp.ModelContextProtocolPrompt;
+import io.vertx.jrpc.mcp.ModelContextProtocolPromptProvider;
 import io.vertx.jrpc.mcp.ModelContextProtocolService;
-import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
 import io.vertx.jrpc.mcp.proto.PromptsListRequest;
 import io.vertx.jrpc.mcp.proto.PromptsListResponse;
 
@@ -37,7 +36,7 @@ public class PromptsListHandler extends BaseHandler<PromptsListRequest, PromptsL
     request.handler(req -> {
       try {
         PromptsListResponse response = PromptsListResponse.newBuilder()
-          .addAllPrompts(service.promptsList().stream().map(ModelContextProtocolPrompt::prompt).collect(Collectors.toUnmodifiableSet()))
+          .addAllPrompts(service.promptsList().stream().map(ModelContextProtocolPromptProvider::prompt).collect(Collectors.toUnmodifiableSet()))
           .build();
         request.response().end(response);
       } catch (Exception e) {

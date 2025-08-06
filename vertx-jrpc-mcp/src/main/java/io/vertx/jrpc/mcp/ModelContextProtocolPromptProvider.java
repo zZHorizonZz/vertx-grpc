@@ -6,7 +6,7 @@ import io.vertx.jrpc.mcp.proto.Prompt;
 
 import java.util.function.Function;
 
-public interface ModelContextProtocolPrompt extends Function<JsonObject, Future<JsonObject>> {
+public interface ModelContextProtocolPromptProvider extends Function<JsonObject, Future<JsonObject>> {
   String id();
 
   Prompt prompt();
