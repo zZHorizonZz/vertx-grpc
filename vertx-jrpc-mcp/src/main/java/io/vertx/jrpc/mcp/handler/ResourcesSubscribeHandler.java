@@ -35,17 +35,7 @@ public class ResourcesSubscribeHandler extends BaseHandler<ResourcesSubscribeReq
   public void handle(GrpcServerRequest<ResourcesSubscribeRequest, ResourcesSubscribeResponse> request) {
     request.handler(req -> {
       try {
-        String resourceId = req.getResourceId();
-        Optional<ModelContextProtocolResourceProvider> res = service.resourcesList().stream()
-          .filter(r -> r.id().equals(resourceId))
-          .findFirst();
-        if (res.isEmpty()) {
-          ResourcesSubscribeResponse response = ResourcesSubscribeResponse.newBuilder()
-            .setSuccess(false)
-            .build();
-          request.response().end(response);
-          return;
-        }
+        // Accept subscription for now without validating specific resource ids
         String subscriptionId = "sub_" + System.currentTimeMillis();
         ResourcesSubscribeResponse response = ResourcesSubscribeResponse.newBuilder()
           .setSuccess(true)

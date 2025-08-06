@@ -26,6 +26,8 @@ service ModelContextProtocolService {
   // Resources
   rpc ResourcesList(ResourcesListRequest) returns (ResourcesListResponse);
 
+  rpc ResourcesTemplatesList(ResourcesTemplatesListRequest) returns (ResourcesTemplatesListResponse);
+
   rpc ResourcesRead(ResourcesReadRequest) returns (ResourcesReadResponse);
 
   rpc ResourcesSubscribe(ResourcesSubscribeRequest) returns (ResourcesSubscribeResponse);
@@ -64,6 +66,18 @@ message Tool {
 
 message Resource {
   string uri = 1 [json_name = "uri"];
+  string name = 2 [json_name = "name"];
+  string title = 3 [json_name = "title"];
+  string description = 4 [json_name = "description"];
+
+  string mime_type = 5 [json_name = "mimeType"];
+  int32 size = 6 [json_name = "size"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message ResourceTemplate {
+  string uri_template = 1 [json_name = "uriTemplate"];
   string name = 2 [json_name = "name"];
   string title = 3 [json_name = "title"];
   string description = 4 [json_name = "description"];
@@ -166,7 +180,9 @@ message ToolsCallResponse {
 
 // Message definitions for resources
 message ResourcesListRequest {
-  string cursor = 1 [json_name = "_meta"];
+  string cursor = 1 [json_name = "cursor"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
 }
 
 message ResourcesListResponse {
@@ -177,8 +193,24 @@ message ResourcesListResponse {
   google.protobuf.Struct meta = 99 [json_name = "_meta"];
 }
 
+message ResourcesTemplatesListRequest {
+  string cursor = 1 [json_name = "cursor"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message ResourcesTemplatesListResponse {
+  repeated ResourceTemplate resource_templates = 1 [json_name = "resourceTemplates"];
+
+  string next_cursor = 2 [json_name = "nextCursor"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
 message ResourcesReadRequest {
-  string uri = 1;
+  string uri = 1 [json_name = "uri"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
 }
 
 message ResourcesReadResponse {

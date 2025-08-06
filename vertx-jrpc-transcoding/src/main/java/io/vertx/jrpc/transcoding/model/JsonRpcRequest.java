@@ -42,7 +42,7 @@ public class JsonRpcRequest {
 
   public JsonRpcRequest(String method, JsonArray unamedParams, Integer id) {
     this.jsonrpc = JSONRPC_VERSION;
-    this.method = method.replaceAll("[^a-zA-Z0-9_]", "");
+    this.method = method;
     this.unamedParams = unamedParams;
     this.namedParams = null;
     this.id = id;
@@ -50,7 +50,7 @@ public class JsonRpcRequest {
 
   public JsonRpcRequest(String method, JsonObject namedParams, Integer id) {
     this.jsonrpc = JSONRPC_VERSION;
-    this.method = method.replaceAll("[^a-zA-Z0-9_]", "");
+    this.method = method;
     this.unamedParams = null;
     this.namedParams = namedParams;
     this.id = id;

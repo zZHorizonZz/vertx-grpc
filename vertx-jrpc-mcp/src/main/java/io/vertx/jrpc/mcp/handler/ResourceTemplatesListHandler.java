@@ -4,43 +4,43 @@ import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.jrpc.mcp.ModelContextProtocolResourceProvider;
-import io.vertx.jrpc.mcp.ModelContextProtocolService;
 import io.vertx.jrpc.mcp.ModelContextProtocolResourceTemplate;
-import io.vertx.jrpc.mcp.proto.Resource;
-import io.vertx.jrpc.mcp.proto.ResourcesListRequest;
-import io.vertx.jrpc.mcp.proto.ResourcesListResponse;
+import io.vertx.jrpc.mcp.ModelContextProtocolService;
+import io.vertx.jrpc.mcp.proto.ResourceTemplate;
+import io.vertx.jrpc.mcp.proto.ResourcesTemplatesListRequest;
+import io.vertx.jrpc.mcp.proto.ResourcesTemplatesListResponse;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Handler for the ResourcesList RPC method.
+ * Handler for the ResourcesTemplatesList RPC method.
  */
-public class ResourcesListHandler extends BaseHandler<ResourcesListRequest, ResourcesListResponse> {
+public class ResourceTemplatesListHandler extends BaseHandler<ResourcesTemplatesListRequest, ResourcesTemplatesListResponse> {
 
-  public static final ServiceMethod<ResourcesListRequest, ResourcesListResponse> SERVICE_METHOD = ServiceMethod.server(
+  public static final ServiceMethod<ResourcesTemplatesListRequest, ResourcesTemplatesListResponse> SERVICE_METHOD = ServiceMethod.server(
     ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
-    "ResourcesList",
+    "ResourcesTemplatesList",
     GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder(ResourcesListRequest.newBuilder()));
+    GrpcMessageDecoder.decoder(ResourcesTemplatesListRequest.newBuilder()));
 
   /**
-   * Creates a new resources list handler.
+   * Creates a new resource templates list handler.
    *
    * @param server the gRPC server
    * @param service the MCP service implementation
    */
-  public ResourcesListHandler(GrpcServer server, ModelContextProtocolService service) {
+  public ResourceTemplatesListHandler(GrpcServer server, ModelContextProtocolService service) {
     super(server, service);
   }
 
   @Override
-  public void handle(GrpcServerRequest<ResourcesListRequest, ResourcesListResponse> request) {
+  public void handle(GrpcServerRequest<ResourcesTemplatesListRequest, ResourcesTemplatesListResponse> request) {
     request.handler(req -> {
       try {
         String filter = req.getCursor();
         List<ModelContextProtocolResourceProvider> providers = service.resourcesList();
-        if (!filter.isEmpty()) {
+        if (filter != null && !filter.isEmpty()) {
           providers = providers.stream()
             .filter(p -> {
               ModelContextProtocolResourceTemplate t = p.template();
@@ -48,10 +48,11 @@ public class ResourcesListHandler extends BaseHandler<ResourcesListRequest, Reso
             })
             .collect(Collectors.toList());
         }
-        List<Resource> resources = providers.stream().map(p -> {
+
+        List<ResourceTemplate> templates = providers.stream().map(p -> {
           ModelContextProtocolResourceTemplate t = p.template();
-          return Resource.newBuilder()
-            .setUri(t.uriTemplate())
+          return ResourceTemplate.newBuilder()
+            .setUriTemplate(t.uriTemplate())
             .setName(t.name())
             .setTitle(t.title())
             .setDescription(t.description())
@@ -59,8 +60,8 @@ public class ResourcesListHandler extends BaseHandler<ResourcesListRequest, Reso
             .build();
         }).collect(Collectors.toList());
 
-        ResourcesListResponse response = ResourcesListResponse.newBuilder()
-          .addAllResources(resources)
+        ResourcesTemplatesListResponse response = ResourcesTemplatesListResponse.newBuilder()
+          .addAllResourceTemplates(templates)
           .build();
         request.response().end(response);
       } catch (Exception e) {

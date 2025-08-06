@@ -63,7 +63,7 @@ public class ModelContextProtocolBridgeTest {
     grpcServer.addService(testService);
 
     // Create and configure bridge
-    bridge = new ModelContextProtocolBridge(vertx, mcpService).bind(grpcServer);
+    new ModelContextProtocolBridge(vertx, mcpService).bind(grpcServer);
 
     // Create HTTP server with JSON-RPC handler
     httpServer = vertx.createHttpServer(new HttpServerOptions().setPort(port))

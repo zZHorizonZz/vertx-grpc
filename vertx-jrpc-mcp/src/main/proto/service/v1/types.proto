@@ -142,8 +142,12 @@ message BlobResourceContent {
 }
 
 message ResourceContent {
+  string uri = 1 [json_name = "uri"];
+
   oneof content {
-    TextResourceContent text = 1;
-    BlobResourceContent blob = 2;
+    string text = 2;
+    bytes blob = 3;
   }
+
+  string mime_type = 4 [json_name = "mimeType"];
 }

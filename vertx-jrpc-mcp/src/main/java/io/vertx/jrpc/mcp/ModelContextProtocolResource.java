@@ -2,6 +2,7 @@ package io.vertx.jrpc.mcp;
 
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.JsonObject;
 
 import java.net.URI;
 
@@ -19,6 +20,8 @@ public interface ModelContextProtocolResource {
   String mimeType();
 
   Future<Buffer> content();
+
+  JsonObject toJson();
 
   interface TextResource extends ModelContextProtocolResource {
 
@@ -57,6 +60,16 @@ public interface ModelContextProtocolResource {
         @Override
         public Future<String> text() {
           return text;
+        }
+
+        @Override
+        public JsonObject toJson() {
+          return new JsonObject()
+            .put("uri", uri.toString())
+            .put("name", name)
+            .put("title", title)
+            .put("description", description)
+            .put("mimeType", mimeType);
         }
       };
     }
@@ -105,6 +118,16 @@ public interface ModelContextProtocolResource {
         @Override
         public Future<Buffer> blob() {
           return blob;
+        }
+
+        @Override
+        public JsonObject toJson() {
+          return new JsonObject()
+            .put("uri", uri.toString())
+            .put("name", name)
+            .put("title", title)
+            .put("description", description)
+            .put("mimeType", mimeType);
         }
       };
     }

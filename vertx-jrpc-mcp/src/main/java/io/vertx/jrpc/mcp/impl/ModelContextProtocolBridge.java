@@ -1,5 +1,7 @@
 package io.vertx.jrpc.mcp.impl;
 
+import com.google.api.AnnotationsProto;
+import com.google.api.HttpRule;
 import com.google.protobuf.Descriptors;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -9,20 +11,25 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.Service;
+import io.vertx.grpc.transcoding.MethodTranscodingOptions;
+import io.vertx.grpc.transcoding.impl.*;
 import io.vertx.jrpc.mcp.*;
 import io.vertx.jrpc.mcp.handler.*;
 import io.vertx.jrpc.mcp.proto.ModelContextProtocolProto;
 import io.vertx.json.schema.*;
-import io.vertx.mcp.proto.ModelContextProtocolAnnotations;
+import io.vertx.mcp.proto.BlobResourceContent;
+import io.vertx.mcp.proto.TextResourceContent;
 
 import java.net.URI;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ModelContextProtocolBridge implements Service {
 
   private static final ServiceName SERVICE_NAME = ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService");
   private static final Descriptors.ServiceDescriptor SERVICE_DESCRIPTOR = ModelContextProtocolProto.getDescriptor().findServiceByName("ModelContextProtocolService");
+
+  public static final Descriptors.Descriptor TEXT_RESOURCE_DESCRIPTOR = TextResourceContent.getDescriptor();
+  public static final Descriptors.Descriptor BLOB_RESOURCE_DESCRIPTOR = BlobResourceContent.getDescriptor();
 
   private final Vertx vertx;
   private final ModelContextProtocolService service;
@@ -48,16 +55,53 @@ public class ModelContextProtocolBridge implements Service {
   public void bind(GrpcServer server) {
     this.grpcServer = server;
 
-    ModelContextProtocolResourceProvider resource = new BridgeClientResourceProvider();
-    this.service.registerResourceProvider(resource);
-
     grpcServer.services().forEach(service -> service.methodDescriptors().forEach(methodDescriptor -> {
-      if (methodDescriptor.getOptions().hasExtension(ModelContextProtocolAnnotations.mcpResource)) {
-        return;
+      String fqn = service.name().fullyQualifiedName() + "/" + methodDescriptor.getName();
+
+      if (methodDescriptor.getOptions().hasExtension(AnnotationsProto.http)) {
+        HttpMethod method;
+        String path;
+
+        HttpRule httpRule = methodDescriptor.getOptions().getExtension(AnnotationsProto.http);
+        switch (httpRule.getPatternCase()) {
+          case GET:
+            method = HttpMethod.GET;
+            path = httpRule.getGet();
+            break;
+          case POST:
+            method = HttpMethod.POST;
+            path = httpRule.getPost();
+            break;
+          case PUT:
+            method = HttpMethod.PUT;
+            path = httpRule.getPut();
+            break;
+          case DELETE:
+            method = HttpMethod.DELETE;
+            path = httpRule.getDelete();
+            break;
+          case PATCH:
+            method = HttpMethod.PATCH;
+            path = httpRule.getPatch();
+            break;
+          default:
+            method = null;
+            path = null;
+        }
+
+        // Register a resource provider for each method (if marked as MCP resource in future we can filter)
+        ModelContextProtocolResourceProvider resourceProvider = new BridgeClientResourceProvider(
+          fqn,
+          path,
+          method,
+          methodDescriptor
+        );
+        this.service.registerResourceProvider(resourceProvider);
+        //return; TODO: Better option processing?
       }
 
       ModelContextProtocolTool tool = createBridgeClientTool(
-        service.name().fullyQualifiedName() + "/" + methodDescriptor.getName(),
+        fqn,
         methodDescriptor.getName(),
         methodDescriptor.getName(),
         methodDescriptor.getName() + " trough mcp",
@@ -72,6 +116,7 @@ public class ModelContextProtocolBridge implements Service {
     server.callHandler(ToolsListHandler.SERVICE_METHOD, new ToolsListHandler(server, service));
     server.callHandler(ToolsCallHandler.SERVICE_METHOD, new ToolsCallHandler(server, service));
     server.callHandler(ResourcesListHandler.SERVICE_METHOD, new ResourcesListHandler(server, service));
+    server.callHandler(ResourceTemplatesListHandler.SERVICE_METHOD, new ResourceTemplatesListHandler(server, service));
     server.callHandler(ResourcesReadHandler.SERVICE_METHOD, new ResourcesReadHandler(server, service));
     server.callHandler(ResourcesSubscribeHandler.SERVICE_METHOD, new ResourcesSubscribeHandler(server, service));
     server.callHandler(ResourcesUnsubscribeHandler.SERVICE_METHOD, new ResourcesUnsubscribeHandler(server, service));
@@ -209,20 +254,118 @@ public class ModelContextProtocolBridge implements Service {
 
   private class BridgeClientResourceProvider implements ModelContextProtocolResourceProvider {
 
-    private final List<Service> services;
-    private final List<Descriptors.MethodDescriptor> methodDescriptors;
+    private final String fqn;
+    private final String path;
+    private final HttpMethod method;
+    private final PathMatcher pathMatcher;
+    private final Descriptors.MethodDescriptor methodDescriptor;
 
-    public BridgeClientResourceProvider() {
-      this.services = grpcServer.services();
-      this.methodDescriptors = services.stream()
-        .flatMap(service -> service.methodDescriptors().stream())
-        .filter(methodDescriptor -> methodDescriptor.getOptions().hasExtension(ModelContextProtocolAnnotations.mcpResource))
-        .collect(Collectors.toList());
+    public BridgeClientResourceProvider(String fqn, String path, HttpMethod method, Descriptors.MethodDescriptor methodDescriptor) {
+      this.fqn = fqn;
+      this.path = path;
+      this.method = method;
+      this.methodDescriptor = methodDescriptor;
+
+      PathMatcherBuilder builder = new PathMatcherBuilder();
+      PathMatcherUtility.registerByHttpRule(builder, new MethodTranscodingOptions()
+          .setSelector("selector")
+          .setHttpMethod(method)
+          .setPath(path)
+          .setBody("*")
+          .setResponseBody("*")
+        , fqn
+      );
+
+      this.pathMatcher = builder.build();
     }
 
     @Override
-    public Future<ModelContextProtocolResource> apply(URI uri) {
-      return null;
+    public Future<List<ModelContextProtocolResource>> apply(URI uri) {
+      PathMatcherLookupResult res = pathMatcher.lookup(this.method.name(), uri.getPath(), "");
+      if (res == null) {
+        return Future.succeededFuture(null);
+      }
+
+      ModelContextProtocolServerRequest mockRequest = new ModelContextProtocolServerRequest(
+        this.method,
+        "/" + fqn,
+        MessageWeaver.weaveRequestMessage(new JsonObject().toBuffer(), res.getVariableBindings(), null),
+        vertx.getOrCreateContext()
+      );
+
+      ModelContextProtocolServerResponse mockResponse = (ModelContextProtocolServerResponse) mockRequest.response();
+
+      //Future<String> textFuture = mockResponse.getResponseFuture().map(buffer -> buffer == null ? "" : buffer.toString());
+
+      // Dispatch the request
+      mockRequest.pause();
+      grpcServer.handle(mockRequest);
+      mockRequest.resume();
+
+      if (methodDescriptor.getOutputType().equals(TEXT_RESOURCE_DESCRIPTOR)) {
+        return mockResponse.getResponseFuture().map(buffer -> {
+          if (buffer == null) {
+            return List.of();
+          }
+
+          JsonObject text = buffer.toJsonObject();
+          URI textUri = URI.create(text.getString("uri"));
+          if (!textUri.isAbsolute()) {
+            textUri = uri.resolve(textUri);
+          }
+
+          return List.of(ModelContextProtocolResource.TextResource.create(
+            textUri,
+            methodDescriptor.getName(),
+            methodDescriptor.getName(),
+            methodDescriptor.getName(),
+            text.getString("mimeType"),
+            Future.succeededFuture(text.getString("text"))));
+        });
+      }
+
+      if (methodDescriptor.getOutputType().equals(BLOB_RESOURCE_DESCRIPTOR)) {
+        return mockResponse.getResponseFuture().map(buffer -> {
+          if (buffer == null) {
+            return List.of();
+          }
+
+          JsonObject blob = buffer.toJsonObject();
+          URI blobUri = URI.create(blob.getString("uri"));
+          if (!blobUri.isAbsolute()) {
+            blobUri = uri.resolve(blobUri);
+          }
+
+          return List.of(ModelContextProtocolResource.BinaryResource.create(
+            blobUri,
+            methodDescriptor.getName(),
+            methodDescriptor.getName(),
+            methodDescriptor.getName(),
+            blob.getString("mimeType"),
+            Future.succeededFuture(blob.getBuffer("blob"))
+          ));
+        });
+      }
+
+      return mockResponse.getResponseFuture().map(buffer -> List.of(ModelContextProtocolResource.TextResource.create(
+        uri,
+        methodDescriptor.getName(),
+        methodDescriptor.getName(),
+        methodDescriptor.getName(),
+        "application/json",
+        Future.succeededFuture(buffer == null ? "" : buffer.toString())
+      )));
+    }
+
+    @Override
+    public ModelContextProtocolResourceTemplate template() {
+      return ModelContextProtocolResourceTemplate.create(
+        methodDescriptor.getName(),
+        methodDescriptor.getName(),
+        methodDescriptor.getName(),
+        "http://localhost" + path,
+        "application/json"
+      );
     }
   }
 }

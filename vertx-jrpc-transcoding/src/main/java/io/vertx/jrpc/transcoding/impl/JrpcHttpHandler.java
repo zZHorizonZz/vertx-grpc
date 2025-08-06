@@ -33,7 +33,16 @@ public class JrpcHttpHandler implements Handler<HttpServerRequest> {
     request.resume().handler(body::appendBuffer);
     request.endHandler(v -> {
       try {
-        JsonRpcRequest jsonRpcRequest = JsonRpcRequest.fromJson(body.toJsonObject());
+        JsonObject bodyJson = body.toJsonObject();
+
+        // Transform the method field from underscore format to PascalCase
+        if (bodyJson.containsKey("method")) {
+          String originalMethod = bodyJson.getString("method");
+          String transformedMethod = toPascalCase(originalMethod);
+          bodyJson.put("method", transformedMethod);
+        }
+
+        JsonRpcRequest jsonRpcRequest = JsonRpcRequest.fromJson(bodyJson);
 
         if (jsonRpcRequest.getMethod() == null) {
           sendJsonRpcError(request.response(), jsonRpcRequest.getId(), -32600, "Invalid Request: missing method");
@@ -54,6 +63,26 @@ public class JrpcHttpHandler implements Handler<HttpServerRequest> {
         sendJsonRpcError(request.response(), null, -32700, "Parse error: " + e.getMessage());
       }
     });
+  }
+
+  private String toPascalCase(String underscoreFormat) {
+    if (underscoreFormat == null || underscoreFormat.isEmpty()) {
+      return underscoreFormat;
+    }
+
+    String[] words = underscoreFormat.split("/");
+    StringBuilder result = new StringBuilder();
+
+    for (String word : words) {
+      if (!word.isEmpty()) {
+        result.append(Character.toUpperCase(word.charAt(0)));
+        if (word.length() > 1) {
+          result.append(word.substring(1).toLowerCase());
+        }
+      }
+    }
+
+    return result.toString();
   }
 
   private void sendJsonRpcError(HttpServerResponse response, Integer id, int code, String message) {

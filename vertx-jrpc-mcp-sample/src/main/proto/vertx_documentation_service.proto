@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+import "google/api/annotations.proto";
+import "service/v1/types.proto";
+
+option java_multiple_files = true;
+option java_package = "io.vertx.jrpc.mcp.sample.vertxdocs";
+
+package io.vertx.jrpc.mcp.sample.vertxdocs;
+
+// Service that showcases usage of Resources with HTTP options annotations
+service VertxDocumentationService {
+  // Read documentation page content as a TextResourceContent
+  rpc ReadDocumentation(ReadDocumentationRequest) returns (io.modelcontextprotocol.v1.ResourceContent) {
+    option (google.api.http) = {
+      get: "/docs/{version}/read/{slug}"
+    };
+  }
+
+  // Search documentation index and return custom results
+  rpc SearchDocumentation(SearchDocumentationRequest) returns (SearchDocumentationResponse) {
+    option (google.api.http) = {
+      get: "/docs/{version}/search/{query}"
+    };
+  }
+}
+
+message ReadDocumentationRequest {
+  string version = 1; // e.g. "5.0.2"
+  // slug identifying the section to read, e.g. "vertx-core/java#_in_the_beginning_there_was_vert_x"
+  string slug = 2;
+}
+
+message SearchDocumentationRequest {
+  string version = 1; // e.g. "5.0.2"
+  string query = 2;   // free text query to search in body or slug
+  //int32 limit = 3;    // optional limit of results (default 10)
+}
+
+message SearchDocumentationResponse {
+  repeated SearchResult results = 1;
+  string version = 2;
+  string query = 3;
+}
+
+message SearchResult {
+  string slug = 1;
+  string snippet = 2; // small snippet from body
+}
