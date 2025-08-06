@@ -1,17 +1,17 @@
 package io.vertx.jrpc.mcp.handler;
 
-import io.vertx.core.Handler;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Struct;
+import com.google.protobuf.util.JsonFormat;
+import io.vertx.core.Future;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
+import io.vertx.jrpc.mcp.ModelContextProtocolService;
 import io.vertx.jrpc.mcp.proto.InitializeRequest;
 import io.vertx.jrpc.mcp.proto.InitializeResponse;
 
-/**
- * Handler for the Initialize RPC method.
- */
-public class InitializeHandler implements Handler<GrpcServerRequest<InitializeRequest, InitializeResponse>> {
+public class InitializeHandler extends BaseHandler<InitializeRequest, InitializeResponse> {
 
   public static final ServiceMethod<InitializeRequest, InitializeResponse> SERVICE_METHOD = ServiceMethod.server(
     ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
@@ -19,37 +19,43 @@ public class InitializeHandler implements Handler<GrpcServerRequest<InitializeRe
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(InitializeRequest.newBuilder()));
 
-  private final GrpcServer server;
-  private final ModelContextProtocolServiceImpl service;
-
-  /**
-   * Creates a new initialize handler.
-   *
-   * @param server the gRPC server
-   * @param service the MCP service implementation
-   */
-  public InitializeHandler(GrpcServer server, ModelContextProtocolServiceImpl service) {
-    this.server = server;
-    this.service = service;
+  public InitializeHandler(GrpcServer server, ModelContextProtocolService service) {
+    super(server, service);
   }
 
   @Override
   public void handle(GrpcServerRequest<InitializeRequest, InitializeResponse> request) {
     request.handler(req -> {
       try {
-        // Call the service implementation method
-        service.initialize(req)
-          .onSuccess(response -> {
-            // Send the response
-            request.response().end(response);
-          })
-          .onFailure(err -> {
-            // Handle errors
-            request.response().status(GrpcStatus.INTERNAL).end();
-          });
+        initialize(req)
+          .onSuccess(response -> request.response().end(response))
+          .onFailure(err -> request.response().status(GrpcStatus.INTERNAL).end());
       } catch (Exception e) {
         request.response().status(GrpcStatus.INTERNAL).end();
       }
     });
+  }
+
+  public Future<InitializeResponse> initialize(InitializeRequest request) {
+    Struct.Builder capabilitiesBuilder = Struct.newBuilder();
+
+    try {
+      JsonFormat.parser().merge(service.getCapabilities().encode(), capabilitiesBuilder);
+    } catch (InvalidProtocolBufferException e) {
+      throw new RuntimeException(e);
+    }
+
+    // Create response with server information
+    InitializeResponse response = InitializeResponse.newBuilder()
+      .setProtocolVersion(service.getProtocolVersion() != null ? service.getProtocolVersion() : request.getProtocolVersion())
+      .setServerInfo(InitializeResponse.ServerInfo.newBuilder()
+        .setName(service.getServerName())
+        .setVersion(service.getServerVersion())
+        .build()
+      )
+      .setCapabilities(capabilitiesBuilder.build())
+      .build();
+
+    return Future.succeededFuture(response);
   }
 }

@@ -6,6 +6,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mcp.proto.*;
+import io.vertx.json.schema.JsonSchema;
 
 public class SchemaUtil {
 
@@ -17,12 +18,19 @@ public class SchemaUtil {
   public static final Descriptors.Descriptor CONTENT_DESCRIPTOR = Content.getDescriptor();
 
   /**
-   * Converts a Protobuf Descriptor to a JSON Schema compatible with Vert.x JsonObject
+   * Converts a Protobuf Descriptor to a Vert.x JsonSchema
    *
    * @param descriptor The Protobuf descriptor to convert
-   * @return JsonObject representing the JSON Schema
+   * @return JsonSchema representing the JSON Schema
    */
-  public static JsonObject toJsonSchema(Descriptor descriptor) {
+  public static JsonSchema toJsonSchema(Descriptor descriptor) {
+    return JsonSchema.of(toJsonObjectSchema(descriptor));
+  }
+
+  /**
+   * Builds the JSON notation of the schema for the given descriptor.
+   */
+  public static JsonObject toJsonObjectSchema(Descriptor descriptor) {
     JsonObject schema = new JsonObject();
 
     // Set schema version
@@ -145,8 +153,8 @@ public class SchemaUtil {
         break;
 
       case MESSAGE:
-        // For nested messages, recursively convert
-        return toJsonSchema(field.getMessageType());
+        // For nested messages, recursively convert to JSON notation
+        return toJsonObjectSchema(field.getMessageType());
 
       default:
         schema.put("type", "string");
@@ -189,27 +197,5 @@ public class SchemaUtil {
       return false; // You might want to adjust this based on your needs
     }*/
     return false;
-  }
-
-  /**
-   * Helper method to create a schema with custom options
-   */
-  public static JsonObject toJsonSchema(Descriptor descriptor, JsonObject options) {
-    JsonObject schema = toJsonSchema(descriptor);
-
-    // Apply custom options if provided
-    if (options != null) {
-      if (options.containsKey("title")) {
-        schema.put("title", options.getString("title"));
-      }
-      if (options.containsKey("description")) {
-        schema.put("description", options.getString("description"));
-      }
-      if (options.containsKey("additionalProperties")) {
-        schema.put("additionalProperties", options.getBoolean("additionalProperties"));
-      }
-    }
-
-    return schema;
   }
 }

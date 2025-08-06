@@ -3,11 +3,13 @@ package io.vertx.jrpc.mcp.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
+import io.vertx.jrpc.mcp.ModelContextProtocolPrompt;
+import io.vertx.jrpc.mcp.ModelContextProtocolService;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
-import io.vertx.jrpc.mcp.proto.InitializeRequest;
-import io.vertx.jrpc.mcp.proto.InitializeResponse;
 import io.vertx.jrpc.mcp.proto.PromptsListRequest;
 import io.vertx.jrpc.mcp.proto.PromptsListResponse;
+
+import java.util.stream.Collectors;
 
 /**
  * Handler for the PromptsList RPC method.
@@ -26,7 +28,7 @@ public class PromptsListHandler extends BaseHandler<PromptsListRequest, PromptsL
    * @param server the gRPC server
    * @param service the MCP service implementation
    */
-  public PromptsListHandler(GrpcServer server, ModelContextProtocolServiceImpl service) {
+  public PromptsListHandler(GrpcServer server, ModelContextProtocolService service) {
     super(server, service);
   }
 
@@ -34,16 +36,10 @@ public class PromptsListHandler extends BaseHandler<PromptsListRequest, PromptsL
   public void handle(GrpcServerRequest<PromptsListRequest, PromptsListResponse> request) {
     request.handler(req -> {
       try {
-        // Call the service implementation method
-        service.promptsList(req)
-          .onSuccess(response -> {
-            // Send the response
-            request.response().end(response);
-          })
-          .onFailure(err -> {
-            // Handle errors
-            request.response().status(GrpcStatus.INTERNAL).end();
-          });
+        PromptsListResponse response = PromptsListResponse.newBuilder()
+          .addAllPrompts(service.promptsList().stream().map(ModelContextProtocolPrompt::prompt).collect(Collectors.toUnmodifiableSet()))
+          .build();
+        request.response().end(response);
       } catch (Exception e) {
         request.response().status(GrpcStatus.INTERNAL).end();
       }

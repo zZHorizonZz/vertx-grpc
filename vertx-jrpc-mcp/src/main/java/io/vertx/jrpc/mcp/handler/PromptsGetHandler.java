@@ -3,9 +3,8 @@ package io.vertx.jrpc.mcp.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
+import io.vertx.jrpc.mcp.ModelContextProtocolService;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
-import io.vertx.jrpc.mcp.proto.InitializeRequest;
-import io.vertx.jrpc.mcp.proto.InitializeResponse;
 import io.vertx.jrpc.mcp.proto.PromptsGetRequest;
 import io.vertx.jrpc.mcp.proto.PromptsGetResponse;
 
@@ -26,7 +25,7 @@ public class PromptsGetHandler extends BaseHandler<PromptsGetRequest, PromptsGet
    * @param server the gRPC server
    * @param service the MCP service implementation
    */
-  public PromptsGetHandler(GrpcServer server, ModelContextProtocolServiceImpl service) {
+  public PromptsGetHandler(GrpcServer server, ModelContextProtocolService service) {
     super(server, service);
   }
 
@@ -34,16 +33,18 @@ public class PromptsGetHandler extends BaseHandler<PromptsGetRequest, PromptsGet
   public void handle(GrpcServerRequest<PromptsGetRequest, PromptsGetResponse> request) {
     request.handler(req -> {
       try {
-        // Call the service implementation method
-        service.promptsGet(req)
-          .onSuccess(response -> {
-            // Send the response
-            request.response().end(response);
-          })
-          .onFailure(err -> {
-            // Handle errors
-            request.response().status(GrpcStatus.INTERNAL).end();
-          });
+        String promptId = req.getPromptId();
+        boolean exists = service.promptsList().stream().anyMatch(p -> p.id().equals(promptId));
+        if (!exists) {
+          request.response().status(GrpcStatus.INTERNAL).end();
+          return;
+        }
+        PromptsGetResponse response = PromptsGetResponse.newBuilder()
+          .setContent("This is the content of prompt " + promptId)
+          .putMetadata("author", "Vert.x")
+          .putMetadata("version", "1.0")
+          .build();
+        request.response().end(response);
       } catch (Exception e) {
         request.response().status(GrpcStatus.INTERNAL).end();
       }

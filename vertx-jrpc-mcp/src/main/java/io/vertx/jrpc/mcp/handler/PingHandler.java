@@ -1,11 +1,13 @@
 package io.vertx.jrpc.mcp.handler;
 
-import io.vertx.grpc.common.*;
+import io.vertx.grpc.common.GrpcMessageDecoder;
+import io.vertx.grpc.common.GrpcMessageEncoder;
+import io.vertx.grpc.common.ServiceMethod;
+import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
+import io.vertx.jrpc.mcp.ModelContextProtocolService;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
-import io.vertx.jrpc.mcp.proto.InitializeRequest;
-import io.vertx.jrpc.mcp.proto.InitializeResponse;
 import io.vertx.jrpc.mcp.proto.PingRequest;
 import io.vertx.jrpc.mcp.proto.PingResponse;
 
@@ -20,33 +22,12 @@ public class PingHandler extends BaseHandler<PingRequest, PingResponse> {
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(PingRequest.newBuilder()));
 
-  /**
-   * Creates a new ping handler.
-   *
-   * @param server the gRPC server
-   * @param service the MCP service implementation
-   */
-  public PingHandler(GrpcServer server, ModelContextProtocolServiceImpl service) {
+  public PingHandler(GrpcServer server, ModelContextProtocolService service) {
     super(server, service);
   }
 
   @Override
   public void handle(GrpcServerRequest<PingRequest, PingResponse> request) {
-    request.handler(req -> {
-      try {
-        // Call the service implementation method
-        service.ping(req)
-          .onSuccess(response -> {
-            // Send the response
-            request.response().end(response);
-          })
-          .onFailure(err -> {
-            // Handle errors
-            request.response().status(GrpcStatus.INTERNAL).end();
-          });
-      } catch (Exception e) {
-        request.response().status(GrpcStatus.INTERNAL).end();
-      }
-    });
+    request.handler(req -> request.response().end(PingResponse.getDefaultInstance()));
   }
 }

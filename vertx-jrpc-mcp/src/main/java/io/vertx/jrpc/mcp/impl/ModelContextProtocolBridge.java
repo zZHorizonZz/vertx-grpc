@@ -1,35 +1,48 @@
 package io.vertx.jrpc.mcp.impl;
 
 import com.google.protobuf.Descriptors;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Struct;
-import com.google.protobuf.util.JsonFormat;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
+import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.server.GrpcServer;
+import io.vertx.grpc.server.Service;
 import io.vertx.jrpc.mcp.ModelContextProtocolService;
 import io.vertx.jrpc.mcp.ModelContextProtocolTool;
-import io.vertx.jrpc.mcp.proto.Tool;
+import io.vertx.jrpc.mcp.handler.*;
+import io.vertx.jrpc.mcp.proto.ModelContextProtocolProto;
+import io.vertx.json.schema.JsonSchema;
 
-public class ModelContextProtocolBridge {
+public class ModelContextProtocolBridge implements Service {
+
+  private static final ServiceName SERVICE_NAME = ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService");
+  private static final Descriptors.ServiceDescriptor SERVICE_DESCRIPTOR = ModelContextProtocolProto.getDescriptor().findServiceByName("ModelContextProtocolService");
 
   private final Vertx vertx;
-  private final ModelContextProtocolService mcpService;
+  private final ModelContextProtocolService service;
 
   private GrpcServer grpcServer;
 
-  public ModelContextProtocolBridge(Vertx vertx, ModelContextProtocolService mcpService) {
+  public ModelContextProtocolBridge(Vertx vertx, ModelContextProtocolService service) {
     this.vertx = vertx;
-    this.mcpService = mcpService;
+    this.service = service;
   }
 
-  public ModelContextProtocolBridge bind(GrpcServer grpcServer) {
-    this.grpcServer = grpcServer;
+  @Override
+  public ServiceName name() {
+    return SERVICE_NAME;
+  }
 
-    mcpService.bind(grpcServer);
+  @Override
+  public Descriptors.ServiceDescriptor descriptor() {
+    return SERVICE_DESCRIPTOR;
+  }
+
+  @Override
+  public void bind(GrpcServer server) {
+    this.grpcServer = server;
 
     grpcServer.services().forEach(service -> service.methodDescriptors().forEach(methodDescriptor -> {
       ModelContextProtocolTool tool = createBridgeClientTool(
@@ -39,10 +52,20 @@ public class ModelContextProtocolBridge {
         methodDescriptor.getName() + " trough mcp",
         methodDescriptor
       );
-      mcpService.registerTool(tool);
+      this.service.registerTool(tool);
     }));
 
-    return this;
+    server.callHandler(InitializeHandler.SERVICE_METHOD, new InitializeHandler(server, service));
+    server.callHandler(PingHandler.SERVICE_METHOD, new PingHandler(server, service));
+    server.callHandler(CancelHandler.SERVICE_METHOD, new CancelHandler(server, service));
+    server.callHandler(ToolsListHandler.SERVICE_METHOD, new ToolsListHandler(server, service));
+    server.callHandler(ToolsCallHandler.SERVICE_METHOD, new ToolsCallHandler(server, service));
+    server.callHandler(ResourcesListHandler.SERVICE_METHOD, new ResourcesListHandler(server, service));
+    server.callHandler(ResourcesReadHandler.SERVICE_METHOD, new ResourcesReadHandler(server, service));
+    server.callHandler(ResourcesSubscribeHandler.SERVICE_METHOD, new ResourcesSubscribeHandler(server, service));
+    server.callHandler(ResourcesUnsubscribeHandler.SERVICE_METHOD, new ResourcesUnsubscribeHandler(server, service));
+    server.callHandler(PromptsListHandler.SERVICE_METHOD, new PromptsListHandler(server, service));
+    server.callHandler(PromptsGetHandler.SERVICE_METHOD, new PromptsGetHandler(server, service));
   }
 
   public ModelContextProtocolTool createBridgeClientTool(String fqn, String name, String methodName, String description, Descriptors.MethodDescriptor methodDescriptor) {
@@ -59,8 +82,8 @@ public class ModelContextProtocolBridge {
     private final Descriptors.Descriptor inputDescriptor;
     private final Descriptors.Descriptor outputDescriptor;
 
-    private final JsonObject inputSchema;
-    private final JsonObject outputSchema;
+    private final JsonSchema inputSchema;
+    private final JsonSchema outputSchema;
 
     public BridgeClientTool(String fqn, String name, String title, String description, Descriptors.MethodDescriptor methodDescriptor) {
       this.fqn = fqn;
@@ -81,51 +104,37 @@ public class ModelContextProtocolBridge {
     }
 
     @Override
-    public Tool tool() {
-      Struct.Builder inputSchemaStruct = Struct.newBuilder();
-      Struct.Builder outputSchemaStruct = Struct.newBuilder();
+    public String name() {
+      return name;
+    }
 
-      try {
-        JsonObject inputSchema = this.inputSchema != null ? this.inputSchema : defaultSchema();
-        JsonObject outputSchema = this.outputSchema != null ? this.outputSchema : defaultSchema();
+    @Override
+    public String title() {
+      return title;
+    }
 
-        JsonFormat.parser().merge(inputSchema.encode(), inputSchemaStruct);
-        JsonFormat.parser().merge(outputSchema.encode(), outputSchemaStruct);
-      } catch (InvalidProtocolBufferException e) {
-        throw new RuntimeException(e);
-      }
+    @Override
+    public String description() {
+      return description;
+    }
 
-      Tool.Builder tool = Tool.newBuilder()
-        .setName(name)
-        .setTitle(title)
-        .setDescription(description)
-        .setInputSchema(inputSchemaStruct);
+    @Override
+    public JsonSchema inputSchema() {
+      return inputSchema;
+    }
 
-      if (isStructured()) {
-        tool.setOutputSchema(outputSchemaStruct);
-      }
-
-      return tool.build();
+    @Override
+    public JsonSchema outputSchema() {
+      return isStructured() ? outputSchema : null;
     }
 
     private boolean isStructured() {
       return outputDescriptor != SchemaUtil.CONTENT_DESCRIPTOR && outputDescriptor != SchemaUtil.TEXT_CONTENT_DESCRIPTOR && outputDescriptor != SchemaUtil.IMAGE_CONTENT_DESCRIPTOR && outputDescriptor != SchemaUtil.AUDIO_CONTENT_DESCRIPTOR && outputDescriptor != SchemaUtil.RESOURCE_LINK_CONTENT_DESCRIPTOR;
     }
 
-    private JsonObject defaultSchema() {
-      JsonObject inputSchema = new JsonObject();
-      inputSchema.put("type", "object");
-
-      inputSchema.put("properties", new JsonObject());
-      inputSchema.put("additionalProperties", false);
-      inputSchema.put("$schema", "http://json-schema.org/draft-07/schema#");
-
-      return inputSchema;
-    }
-
     @Override
     public ModelContextProtocolService service() {
-      return mcpService;
+      return service;
     }
 
     @Override

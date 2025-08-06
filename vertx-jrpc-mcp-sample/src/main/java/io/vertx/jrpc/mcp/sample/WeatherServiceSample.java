@@ -26,14 +26,10 @@ public class WeatherServiceSample {
 
     // Create and register the weather service
     grpcServer.addService(new WeatherServiceImpl());
-    grpcServer.addService(new ContentServiceImpl());
     grpcServer.addService(new PokemonServiceImpl());
 
-    // Create MCP service
-    ModelContextProtocolServiceImpl mcpService = new ModelContextProtocolServiceImpl(vertx);
-
     // Create and configure MCP bridge
-    ModelContextProtocolBridge bridge = new ModelContextProtocolBridge(vertx, mcpService).bind(grpcServer);
+    new ModelContextProtocolBridge(vertx, new ModelContextProtocolServiceImpl(vertx)).bind(grpcServer);
 
     // Create HTTP server with JSON-RPC handler
     HttpServer httpServer = vertx.createHttpServer(new HttpServerOptions().setPort(PORT))

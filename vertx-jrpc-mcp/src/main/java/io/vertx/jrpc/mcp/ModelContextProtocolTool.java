@@ -4,6 +4,7 @@ import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.jrpc.mcp.proto.Tool;
+import io.vertx.json.schema.JsonSchema;
 
 import java.net.URI;
 import java.util.List;
@@ -13,18 +14,26 @@ import java.util.stream.Collectors;
 public interface ModelContextProtocolTool extends Function<JsonObject, Future<ModelContextProtocolTool.ContentDataType>> {
   String id();
 
-  Tool tool();
+  String name();
+
+  String title();
+
+  String description();
+
+  JsonSchema inputSchema();
+
+  JsonSchema outputSchema();
 
   ModelContextProtocolService service();
 
-  public interface ContentDataType {
+  interface ContentDataType {
     String type();
 
     JsonObject toJson();
   }
 
-  public interface StructuredJsonContentDataType extends ContentDataType {
-    public static StructuredJsonContentDataType create(JsonObject json) {
+  interface StructuredJsonContentDataType extends ContentDataType {
+    static StructuredJsonContentDataType create(JsonObject json) {
       return () -> json;
     }
 
@@ -41,12 +50,12 @@ public interface ModelContextProtocolTool extends Function<JsonObject, Future<Mo
     JsonObject json();
   }
 
-  public interface UnstructuredContentDataType extends ContentDataType {
-    public static UnstructuredContentDataType create(List<ContentDataType> content) {
+  interface UnstructuredContentDataType extends ContentDataType {
+    static UnstructuredContentDataType create(List<ContentDataType> content) {
       return () -> content;
     }
 
-    public static UnstructuredContentDataType create(JsonObject json) {
+    static UnstructuredContentDataType create(JsonObject json) {
       return () -> {
         JsonArray contentJson = json.getJsonArray("content");
         if (contentJson == null) {
@@ -104,12 +113,12 @@ public interface ModelContextProtocolTool extends Function<JsonObject, Future<Mo
     List<ContentDataType> content();
   }
 
-  public interface TextContentDataType extends ContentDataType {
-    public static TextContentDataType create(String text) {
+  interface TextContentDataType extends ContentDataType {
+    static TextContentDataType create(String text) {
       return () -> text;
     }
 
-    public static TextContentDataType create(JsonObject json) {
+    static TextContentDataType create(JsonObject json) {
       return create(json.getString("text"));
     }
 
@@ -126,8 +135,8 @@ public interface ModelContextProtocolTool extends Function<JsonObject, Future<Mo
     String text();
   }
 
-  public interface ImageContentDataType extends ContentDataType {
-    public static ImageContentDataType create(String data, String mimeType) {
+  interface ImageContentDataType extends ContentDataType {
+    static ImageContentDataType create(String data, String mimeType) {
       return new ImageContentDataType() {
         @Override
         public String data() {
@@ -141,7 +150,7 @@ public interface ModelContextProtocolTool extends Function<JsonObject, Future<Mo
       };
     }
 
-    public static ImageContentDataType create(JsonObject json) {
+    static ImageContentDataType create(JsonObject json) {
       return create(json.getString("data"), json.getString("mimeType"));
     }
 
@@ -163,8 +172,8 @@ public interface ModelContextProtocolTool extends Function<JsonObject, Future<Mo
     String mimeType();
   }
 
-  public interface AudioContentDataType extends ContentDataType {
-    public static AudioContentDataType create(String data, String mimeType) {
+  interface AudioContentDataType extends ContentDataType {
+    static AudioContentDataType create(String data, String mimeType) {
       return new AudioContentDataType() {
         @Override
         public String data() {
@@ -178,7 +187,7 @@ public interface ModelContextProtocolTool extends Function<JsonObject, Future<Mo
       };
     }
 
-    public static AudioContentDataType create(JsonObject json) {
+    static AudioContentDataType create(JsonObject json) {
       return create(json.getString("data"), json.getString("mimeType"));
     }
 
@@ -200,8 +209,8 @@ public interface ModelContextProtocolTool extends Function<JsonObject, Future<Mo
     String mimeType();
   }
 
-  public interface ResourceLinkContentDataType extends ContentDataType {
-    public static ResourceLinkContentDataType create(URI uri, String name, String description, String mimeType) {
+  interface ResourceLinkContentDataType extends ContentDataType {
+    static ResourceLinkContentDataType create(URI uri, String name, String description, String mimeType) {
       return new ResourceLinkContentDataType() {
         @Override
         public URI uri() {
@@ -225,7 +234,7 @@ public interface ModelContextProtocolTool extends Function<JsonObject, Future<Mo
       };
     }
 
-    public static ResourceLinkContentDataType create(JsonObject json) {
+    static ResourceLinkContentDataType create(JsonObject json) {
       return create(
         URI.create(json.getString("uri")),
         json.getString("name"),
@@ -259,7 +268,7 @@ public interface ModelContextProtocolTool extends Function<JsonObject, Future<Mo
   }
 
   // TODO: Make this work with Resources
-  public interface EmbeddedResourceContentDataType extends ContentDataType {
+  interface EmbeddedResourceContentDataType extends ContentDataType {
     default String type() {
       return "resource";
     }

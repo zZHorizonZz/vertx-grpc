@@ -27,14 +27,14 @@ public class ModelContextProtocolServerRequest extends HttpServerRequestInternal
   private final MultiMap headers = MultiMap.caseInsensitiveMultiMap();
   private final MultiMap params = MultiMap.caseInsensitiveMultiMap();
   private final Set<Cookie> cookies = new HashSet<>();
+  private final HttpServerResponse response;
+  private final HttpConnection connection = new ModelContextProtocolConnection();
+  private final Context context;
   private Handler<Buffer> dataHandler;
   private Handler<Void> endHandler;
   private Handler<Throwable> exceptionHandler;
   private boolean ended = false;
   private boolean paused = false;
-  private final HttpServerResponse response;
-  private final HttpConnection connection = new ModelContextProtocolConnection();
-  private final Context context;
 
   public ModelContextProtocolServerRequest(HttpMethod method, String path, Buffer body, Context context) {
     this.method = method;

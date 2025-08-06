@@ -3,11 +3,14 @@ package io.vertx.jrpc.mcp.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
+import io.vertx.jrpc.mcp.ModelContextProtocolResource;
+import io.vertx.jrpc.mcp.ModelContextProtocolService;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
-import io.vertx.jrpc.mcp.proto.InitializeRequest;
-import io.vertx.jrpc.mcp.proto.InitializeResponse;
 import io.vertx.jrpc.mcp.proto.ResourcesListRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesListResponse;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Handler for the ResourcesList RPC method.
@@ -26,7 +29,7 @@ public class ResourcesListHandler extends BaseHandler<ResourcesListRequest, Reso
    * @param server the gRPC server
    * @param service the MCP service implementation
    */
-  public ResourcesListHandler(GrpcServer server, ModelContextProtocolServiceImpl service) {
+  public ResourcesListHandler(GrpcServer server, ModelContextProtocolService service) {
     super(server, service);
   }
 
@@ -34,16 +37,18 @@ public class ResourcesListHandler extends BaseHandler<ResourcesListRequest, Reso
   public void handle(GrpcServerRequest<ResourcesListRequest, ResourcesListResponse> request) {
     request.handler(req -> {
       try {
-        // Call the service implementation method
-        service.resourcesList(req)
-          .onSuccess(response -> {
-            // Send the response
-            request.response().end(response);
-          })
-          .onFailure(err -> {
-            // Handle errors
-            request.response().status(GrpcStatus.INTERNAL).end();
-          });
+        String filter = req.getCursor();
+        List<ModelContextProtocolResource> resources = service.resourcesList();
+        if (!filter.isEmpty()) {
+          resources = resources.stream()
+            .filter(resource -> resource.resource().getName().contains(filter) ||
+              resource.resource().getDescription().contains(filter))
+            .collect(Collectors.toList());
+        }
+        ResourcesListResponse response = ResourcesListResponse.newBuilder()
+          .addAllResources(resources.stream().map(ModelContextProtocolResource::resource).collect(Collectors.toUnmodifiableSet()))
+          .build();
+        request.response().end(response);
       } catch (Exception e) {
         request.response().status(GrpcStatus.INTERNAL).end();
       }

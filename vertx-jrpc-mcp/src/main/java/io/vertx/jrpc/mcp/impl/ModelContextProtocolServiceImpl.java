@@ -1,12 +1,8 @@
 package io.vertx.jrpc.mcp.impl;
 
 import com.google.protobuf.Descriptors;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Struct;
-import com.google.protobuf.util.JsonFormat;
-import com.google.protobuf.util.Structs;
-import com.google.protobuf.util.Values;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.grpc.common.ServiceName;
@@ -16,14 +12,10 @@ import io.vertx.jrpc.mcp.ModelContextProtocolResource;
 import io.vertx.jrpc.mcp.ModelContextProtocolService;
 import io.vertx.jrpc.mcp.ModelContextProtocolTool;
 import io.vertx.jrpc.mcp.handler.*;
-import io.vertx.jrpc.mcp.proto.*;
+import io.vertx.jrpc.mcp.proto.ModelContextProtocolProto;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of the ModelContextProtocolService.
@@ -35,7 +27,7 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
 
   private final Vertx vertx;
 
-  private final Map<String, String> activeRequests = new ConcurrentHashMap<>();
+  private final Map<Integer, Promise<?>> activeRequests = new ConcurrentHashMap<>();
 
   private final List<ModelContextProtocolTool> availableTools = new ArrayList<>();
   private final List<ModelContextProtocolResource> availableResources = new ArrayList<>();
@@ -51,341 +43,23 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
   }
 
   @Override
-  public ServiceName name() {
-    return SERVICE_NAME;
+  public String getProtocolVersion() {
+    return "2025-06-18";
   }
 
   @Override
-  public Descriptors.ServiceDescriptor descriptor() {
-    return SERVICE_DESCRIPTOR;
+  public String getServerVersion() {
+    return "1.0";
   }
 
   @Override
-  public void bind(GrpcServer server) {
-    // Register all handlers with the server
-    server.callHandler(InitializeHandler.SERVICE_METHOD, new InitializeHandler(server, this));
-    server.callHandler(PingHandler.SERVICE_METHOD, new PingHandler(server, this));
-    server.callHandler(CancelHandler.SERVICE_METHOD, new CancelHandler(server, this));
-    server.callHandler(ToolsListHandler.SERVICE_METHOD, new ToolsListHandler(server, this));
-    server.callHandler(ToolsCallHandler.SERVICE_METHOD, new ToolsCallHandler(server, this));
-    server.callHandler(ResourcesListHandler.SERVICE_METHOD, new ResourcesListHandler(server, this));
-    server.callHandler(ResourcesReadHandler.SERVICE_METHOD, new ResourcesReadHandler(server, this));
-    server.callHandler(ResourcesSubscribeHandler.SERVICE_METHOD, new ResourcesSubscribeHandler(server, this));
-    server.callHandler(ResourcesUnsubscribeHandler.SERVICE_METHOD, new ResourcesUnsubscribeHandler(server, this));
-    server.callHandler(PromptsListHandler.SERVICE_METHOD, new PromptsListHandler(server, this));
-    server.callHandler(PromptsGetHandler.SERVICE_METHOD, new PromptsGetHandler(server, this));
+  public String getServerName() {
+    return "Vert.x MCP Server";
   }
 
-  /**
-   * Handles the initialize request.
-   *
-   * @param request the initialize request
-   * @return a future with the initialize response
-   */
-  public Future<InitializeResponse> initialize(InitializeRequest request) {
-    // Merge client capabilities with server capabilities
-    //capabilities.putAll(request.getCapabilitiesMap());
-
-    Struct.Builder capabilitiesBuilder = Struct.newBuilder();
-
-    try {
-      JsonFormat.parser().merge(getCapabilities().encode(), capabilitiesBuilder);
-    } catch (InvalidProtocolBufferException e) {
-      throw new RuntimeException(e);
-    }
-
-    // Create response with server information
-    InitializeResponse response = InitializeResponse.newBuilder()
-      .setProtocolVersion(request.getProtocolVersion())
-      .setServerInfo(InitializeResponse.ServerInfo.newBuilder()
-        .setName("Vert.x MCP Server")
-        .setVersion("1.0.0")
-        .build()
-      )
-      .setCapabilities(capabilitiesBuilder.build())
-      .build();
-
-    return Future.succeededFuture(response);
-  }
-
-  /**
-   * Handles the ping request.
-   *
-   * @param request the ping request
-   * @return a future with the ping response
-   */
-  public Future<PingResponse> ping(PingRequest request) {
-    return Future.succeededFuture(PingResponse.newBuilder().build());
-  }
-
-  /**
-   * Handles the cancel request.
-   *
-   * @param request the cancel request
-   * @return a future with the cancel response
-   */
-  public Future<CancelResponse> cancel(CancelRequest request) {
-    String requestId = request.getRequestId();
-    boolean success = activeRequests.remove(requestId) != null;
-
-    return Future.succeededFuture(CancelResponse.newBuilder()
-      .setSuccess(success)
-      .build());
-  }
-
-  /**
-   * Lists available tools.
-   *
-   * @param request the tools list request
-   * @return a future with the tools list response
-   */
-  public Future<ToolsListResponse> toolsList(ToolsListRequest request) {
-    return Future.succeededFuture(ToolsListResponse.newBuilder()
-      .addAllTools(availableTools.stream().map(ModelContextProtocolTool::tool).collect(Collectors.toUnmodifiableSet()))
-      .build());
-  }
-
-  /**
-   * Calls a tool.
-   *
-   * @param request the tools call request
-   * @return a future with the tools call response
-   */
-  public Future<ToolsCallResponse> toolsCall(ToolsCallRequest request) {
-    String name = request.getName();
-    JsonObject parameters;
-    try {
-      String arguments = JsonFormat.printer().print(request.getArguments());
-      parameters = new JsonObject(arguments);
-    } catch (InvalidProtocolBufferException e) {
-      throw new RuntimeException(e);
-    }
-
-    // Check if tool exists
-    Optional<ModelContextProtocolTool> toolExists = availableTools.stream().filter(tool -> tool.id().equals(name)).findAny();
-
-    if (toolExists.isEmpty()) {
-      throw new RuntimeException("Tool not found: " + name);
-    }
-
-    return toolExists.get().apply(parameters).map(result -> {
-      ToolsCallResponse.Builder response = ToolsCallResponse.newBuilder();
-
-      if (result instanceof ModelContextProtocolTool.StructuredJsonContentDataType) {
-        Struct.Builder content = Struct.newBuilder();
-
-        try {
-          JsonFormat.parser().merge(result.toJson().encode(), content);
-        } catch (InvalidProtocolBufferException e) {
-          throw new RuntimeException(e);
-        }
-
-        return response.addContent(convertDataType(result).get(0)).setStructuredContent(content).build();
-      }
-
-      if (result instanceof ModelContextProtocolTool.UnstructuredContentDataType) {
-        response.addAllContent(convertDataType(result));
-        return response.build();
-      }
-
-      return response.addContent(convertDataType(result).get(0)).build();
-    });
-  }
-
-  private List<Struct> convertDataType(ModelContextProtocolTool.ContentDataType dataType) {
-    List<Struct> content = new ArrayList<>();
-
-    if (dataType instanceof ModelContextProtocolTool.StructuredJsonContentDataType) {
-      content.add(Structs.of("type", Values.of("text"), "text", Values.of(dataType.toJson().encode())));
-      return content;
-    } else if (dataType instanceof ModelContextProtocolTool.UnstructuredContentDataType) {
-      ModelContextProtocolTool.UnstructuredContentDataType unstructuredDataType = (ModelContextProtocolTool.UnstructuredContentDataType) dataType;
-      unstructuredDataType.content().forEach(contentItem -> {
-        Struct.Builder contentItemStruct = Struct.newBuilder();
-        try {
-          JsonFormat.parser().merge(contentItem.toJson().encode(), contentItemStruct);
-        } catch (InvalidProtocolBufferException e) {
-          throw new RuntimeException(e);
-        }
-        content.add(contentItemStruct.build());
-      });
-      return content;
-    }
-
-    Struct.Builder contentItemStruct = Struct.newBuilder();
-    try {
-      JsonFormat.parser().merge(dataType.toJson().encode(), contentItemStruct);
-    } catch (InvalidProtocolBufferException e) {
-      throw new RuntimeException(e);
-    }
-
-    content.add(contentItemStruct.build());
-
-    return content;
-  }
-
-  /**
-   * Lists available resources.
-   *
-   * @param request the resources list request
-   * @return a future with the resources list response
-   */
-  public Future<ResourcesListResponse> resourcesList(ResourcesListRequest request) {
-    String filter = request.getCursor();
-    List<ModelContextProtocolResource> filteredResources = availableResources;
-
-    // Apply filter if provided
-    if (!filter.isEmpty()) {
-      filteredResources = availableResources.stream()
-        .filter(resource -> resource.resource().getName().contains(filter) ||
-          resource.resource().getDescription().contains(filter))
-        .collect(Collectors.toList());
-    }
-
-    return Future.succeededFuture(ResourcesListResponse.newBuilder()
-      .addAllResources(filteredResources.stream().map(ModelContextProtocolResource::resource).collect(Collectors.toUnmodifiableSet()))
-      .build());
-  }
-
-  /**
-   * Reads a resource.
-   *
-   * @param request the resources read request
-   * @return a future with the resources read response
-   */
-  public Future<ResourcesReadResponse> resourcesRead(ResourcesReadRequest request) {
-    String resourceId = request.getResourceId();
-
-    // Check if resource exists
-    boolean resourceExists = availableResources.stream()
-      .anyMatch(resource -> resource.id().equals(resourceId));
-
-    if (!resourceExists) {
-      return Future.failedFuture("Resource not found: " + resourceId);
-    }
-
-    // In a real implementation, this would actually read the resource
-    // For now, just return a mock response
-    return Future.succeededFuture(ResourcesReadResponse.newBuilder()
-      .setContent("This is the content of resource " + resourceId)
-      .setContentType("text/plain")
-      .build());
-  }
-
-  /**
-   * Subscribes to a resource.
-   *
-   * @param request the resources subscribe request
-   * @return a future with the resources subscribe response
-   */
-  public Future<ResourcesSubscribeResponse> resourcesSubscribe(ResourcesSubscribeRequest request) {
-    String resourceId = request.getResourceId();
-
-    // Check if resource exists
-    boolean resourceExists = availableResources.stream()
-      .anyMatch(resource -> resource.id().equals(resourceId));
-
-    if (!resourceExists) {
-      return Future.succeededFuture(ResourcesSubscribeResponse.newBuilder()
-        .setSuccess(false)
-        .build());
-    }
-
-    // Generate a subscription ID
-    String subscriptionId = "sub_" + System.currentTimeMillis();
-
-    return Future.succeededFuture(ResourcesSubscribeResponse.newBuilder()
-      .setSuccess(true)
-      .setSubscriptionId(subscriptionId)
-      .build());
-  }
-
-  /**
-   * Unsubscribes from a resource.
-   *
-   * @param request the resources unsubscribe request
-   * @return a future with the resources unsubscribe response
-   */
-  public Future<ResourcesUnsubscribeResponse> resourcesUnsubscribe(ResourcesUnsubscribeRequest request) {
-    String subscriptionId = request.getSubscriptionId();
-
-    // In a real implementation, this would actually unsubscribe
-    // For now, just return a mock response
-    return Future.succeededFuture(ResourcesUnsubscribeResponse.newBuilder()
-      .setSuccess(true)
-      .build());
-  }
-
-  /**
-   * Lists available prompts.
-   *
-   * @param request the prompts list request
-   * @return a future with the prompts list response
-   */
-  public Future<PromptsListResponse> promptsList(PromptsListRequest request) {
-    return Future.succeededFuture(PromptsListResponse.newBuilder()
-      .addAllPrompts(availablePrompts.stream().map(ModelContextProtocolPrompt::prompt).collect(Collectors.toUnmodifiableSet()))
-      .build());
-  }
-
-  /**
-   * Gets a prompt.
-   *
-   * @param request the prompts get request
-   * @return a future with the prompts get response
-   */
-  public Future<PromptsGetResponse> promptsGet(PromptsGetRequest request) {
-    String promptId = request.getPromptId();
-
-    // Check if prompt exists
-    boolean promptExists = availablePrompts.stream()
-      .anyMatch(prompt -> prompt.id().equals(promptId));
-
-    if (!promptExists) {
-      return Future.failedFuture("Prompt not found: " + promptId);
-    }
-
-    // In a real implementation, this would actually get the prompt
-    // For now, just return a mock response
-    return Future.succeededFuture(PromptsGetResponse.newBuilder()
-      .setContent("This is the content of prompt " + promptId)
-      .putMetadata("author", "Vert.x")
-      .putMetadata("version", "1.0")
-      .build());
-  }
-
-  /**
-   * Adds a tool to the available tools list.
-   *
-   * @param tool the tool to add
-   */
-  public void registerTool(ModelContextProtocolTool tool) {
-    availableTools.add(tool);
-  }
-
-  /**
-   * Adds a resource to the available resources list.
-   *
-   * @param resource the resource to add
-   */
-  public void registerResource(ModelContextProtocolResource resource) {
-    availableResources.add(resource);
-  }
-
-  /**
-   * Adds a prompt to the available prompts list.
-   *
-   * @param prompt the prompt to add
-   */
-  public void registerPrompt(ModelContextProtocolPrompt prompt) {
-    availablePrompts.add(prompt);
-  }
-
+  @Override
   public JsonObject getCapabilities() {
     JsonObject capabilities = new JsonObject();
-
-    //capabilities.put("protocol_version", "1.0");
-    //capabilities.put("supports_streaming", "false");
 
     capabilities.put("completions", new JsonObject());
     capabilities.put("tools", new JsonObject().put("listChanged", true));
@@ -393,5 +67,65 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
     capabilities.put("resources", new JsonObject().put("listChanged", true));
 
     return capabilities;
+  }
+
+  @Override
+  public void registerTool(ModelContextProtocolTool tool) {
+    availableTools.add(tool);
+  }
+
+  @Override
+  public void registerResource(ModelContextProtocolResource resource) {
+    availableResources.add(resource);
+  }
+
+  @Override
+  public void registerPrompt(ModelContextProtocolPrompt prompt) {
+    availablePrompts.add(prompt);
+  }
+
+  @Override
+  public List<ModelContextProtocolTool> toolsList() {
+    return Collections.unmodifiableList(availableTools);
+  }
+
+  @Override
+  public List<ModelContextProtocolResource> resourcesList() {
+    return Collections.unmodifiableList(availableResources);
+  }
+
+  @Override
+  public List<ModelContextProtocolPrompt> promptsList() {
+    return Collections.unmodifiableList(availablePrompts);
+  }
+
+  @Override
+  public Future<ModelContextProtocolTool.ContentDataType> executeTool(String tool, JsonObject parameters) {
+    Optional<ModelContextProtocolTool> toolExists = availableTools.stream().filter(t -> t.id().equals(tool)).findFirst();
+
+    if (toolExists.isEmpty()) {
+      throw new RuntimeException("Tool with id " + tool + " not found");
+    }
+
+    return toolExists.get().apply(parameters);
+  }
+
+  @Override
+  public Future<JsonObject> executeResource(String resource, JsonObject parameters) {
+    return null;
+  }
+
+  @Override
+  public Future<JsonObject> executePrompt(String prompt, JsonObject parameters) {
+    return null;
+  }
+
+  @Override
+  public boolean cancelRequest(Integer requestId) {
+    Promise<?> promise = activeRequests.remove(requestId);
+    if (promise != null) {
+      return promise.tryFail("Cancelled by user");
+    }
+    return false;
   }
 }

@@ -3,11 +3,10 @@ package io.vertx.jrpc.mcp.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
+import io.vertx.jrpc.mcp.ModelContextProtocolService;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
 import io.vertx.jrpc.mcp.proto.CancelRequest;
 import io.vertx.jrpc.mcp.proto.CancelResponse;
-import io.vertx.jrpc.mcp.proto.PingRequest;
-import io.vertx.jrpc.mcp.proto.PingResponse;
 
 /**
  * Handler for the Cancel RPC method.
@@ -26,7 +25,7 @@ public class CancelHandler extends BaseHandler<CancelRequest, CancelResponse> {
    * @param server the gRPC server
    * @param service the MCP service implementation
    */
-  public CancelHandler(GrpcServer server, ModelContextProtocolServiceImpl service) {
+  public CancelHandler(GrpcServer server, ModelContextProtocolService service) {
     super(server, service);
   }
 
@@ -34,16 +33,10 @@ public class CancelHandler extends BaseHandler<CancelRequest, CancelResponse> {
   public void handle(GrpcServerRequest<CancelRequest, CancelResponse> request) {
     request.handler(req -> {
       try {
-        // Call the service implementation method
-        service.cancel(req)
-          .onSuccess(response -> {
-            // Send the response
-            request.response().end(response);
-          })
-          .onFailure(err -> {
-            // Handle errors
-            request.response().status(GrpcStatus.INTERNAL).end();
-          });
+        int requestId = Integer.parseInt(req.getRequestId());
+        boolean success = service.cancelRequest(requestId);
+        CancelResponse response = CancelResponse.newBuilder().setSuccess(success).build();
+        request.response().end(response);
       } catch (Exception e) {
         request.response().status(GrpcStatus.INTERNAL).end();
       }

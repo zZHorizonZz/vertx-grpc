@@ -3,11 +3,13 @@ package io.vertx.jrpc.mcp.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
+import io.vertx.jrpc.mcp.ModelContextProtocolResource;
+import io.vertx.jrpc.mcp.ModelContextProtocolService;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
-import io.vertx.jrpc.mcp.proto.InitializeRequest;
-import io.vertx.jrpc.mcp.proto.InitializeResponse;
 import io.vertx.jrpc.mcp.proto.ResourcesSubscribeRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesSubscribeResponse;
+
+import java.util.Optional;
 
 /**
  * Handler for the ResourcesSubscribe RPC method.
@@ -26,7 +28,7 @@ public class ResourcesSubscribeHandler extends BaseHandler<ResourcesSubscribeReq
    * @param server the gRPC server
    * @param service the MCP service implementation
    */
-  public ResourcesSubscribeHandler(GrpcServer server, ModelContextProtocolServiceImpl service) {
+  public ResourcesSubscribeHandler(GrpcServer server, ModelContextProtocolService service) {
     super(server, service);
   }
 
@@ -34,16 +36,23 @@ public class ResourcesSubscribeHandler extends BaseHandler<ResourcesSubscribeReq
   public void handle(GrpcServerRequest<ResourcesSubscribeRequest, ResourcesSubscribeResponse> request) {
     request.handler(req -> {
       try {
-        // Call the service implementation method
-        service.resourcesSubscribe(req)
-          .onSuccess(response -> {
-            // Send the response
-            request.response().end(response);
-          })
-          .onFailure(err -> {
-            // Handle errors
-            request.response().status(GrpcStatus.INTERNAL).end();
-          });
+        String resourceId = req.getResourceId();
+        Optional<ModelContextProtocolResource> res = service.resourcesList().stream()
+          .filter(r -> r.id().equals(resourceId))
+          .findFirst();
+        if (res.isEmpty()) {
+          ResourcesSubscribeResponse response = ResourcesSubscribeResponse.newBuilder()
+            .setSuccess(false)
+            .build();
+          request.response().end(response);
+          return;
+        }
+        String subscriptionId = "sub_" + System.currentTimeMillis();
+        ResourcesSubscribeResponse response = ResourcesSubscribeResponse.newBuilder()
+          .setSuccess(true)
+          .setSubscriptionId(subscriptionId)
+          .build();
+        request.response().end(response);
       } catch (Exception e) {
         request.response().status(GrpcStatus.INTERNAL).end();
       }

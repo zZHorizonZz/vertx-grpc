@@ -18,10 +18,10 @@ import java.util.Set;
 public class ModelContextProtocolServerResponse implements HttpServerResponse {
   private final Promise<Buffer> responsePromise = Promise.promise();
   private final Buffer responseBuffer = Buffer.buffer();
-  private int statusCode = 200;
-  private String statusMessage = "OK";
   private final MultiMap headers = MultiMap.caseInsensitiveMultiMap();
   private final MultiMap trailers = MultiMap.caseInsensitiveMultiMap();
+  private int statusCode = 200;
+  private String statusMessage = "OK";
   private boolean chunked = false;
   private boolean ended = false;
   private boolean headWritten = false;

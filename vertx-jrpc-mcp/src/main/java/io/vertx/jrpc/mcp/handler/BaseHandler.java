@@ -3,6 +3,7 @@ package io.vertx.jrpc.mcp.handler;
 import io.vertx.core.Handler;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
+import io.vertx.jrpc.mcp.ModelContextProtocolService;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
 
 /**
@@ -14,7 +15,7 @@ import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
 public abstract class BaseHandler<Req, Resp> implements Handler<GrpcServerRequest<Req, Resp>> {
 
   protected final GrpcServer server;
-  protected final ModelContextProtocolServiceImpl service;
+  protected final ModelContextProtocolService service;
 
   /**
    * Creates a new base handler.
@@ -22,7 +23,7 @@ public abstract class BaseHandler<Req, Resp> implements Handler<GrpcServerReques
    * @param server the gRPC server
    * @param service the MCP service implementation
    */
-  public BaseHandler(GrpcServer server, ModelContextProtocolServiceImpl service) {
+  public BaseHandler(GrpcServer server, ModelContextProtocolService service) {
     this.server = server;
     this.service = service;
   }

@@ -3,11 +3,13 @@ package io.vertx.jrpc.mcp.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
+import io.vertx.jrpc.mcp.ModelContextProtocolResource;
+import io.vertx.jrpc.mcp.ModelContextProtocolService;
 import io.vertx.jrpc.mcp.impl.ModelContextProtocolServiceImpl;
-import io.vertx.jrpc.mcp.proto.InitializeRequest;
-import io.vertx.jrpc.mcp.proto.InitializeResponse;
 import io.vertx.jrpc.mcp.proto.ResourcesReadRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesReadResponse;
+
+import java.util.Optional;
 
 /**
  * Handler for the ResourcesRead RPC method.
@@ -26,7 +28,7 @@ public class ResourcesReadHandler extends BaseHandler<ResourcesReadRequest, Reso
    * @param server the gRPC server
    * @param service the MCP service implementation
    */
-  public ResourcesReadHandler(GrpcServer server, ModelContextProtocolServiceImpl service) {
+  public ResourcesReadHandler(GrpcServer server, ModelContextProtocolService service) {
     super(server, service);
   }
 
@@ -34,16 +36,19 @@ public class ResourcesReadHandler extends BaseHandler<ResourcesReadRequest, Reso
   public void handle(GrpcServerRequest<ResourcesReadRequest, ResourcesReadResponse> request) {
     request.handler(req -> {
       try {
-        // Call the service implementation method
-        service.resourcesRead(req)
-          .onSuccess(response -> {
-            // Send the response
-            request.response().end(response);
-          })
-          .onFailure(err -> {
-            // Handle errors
-            request.response().status(GrpcStatus.INTERNAL).end();
-          });
+        String resourceId = req.getResourceId();
+        Optional<ModelContextProtocolResource> res = service.resourcesList().stream()
+          .filter(r -> r.id().equals(resourceId))
+          .findFirst();
+        if (res.isEmpty()) {
+          request.response().status(GrpcStatus.INTERNAL).end();
+          return;
+        }
+        ResourcesReadResponse response = ResourcesReadResponse.newBuilder()
+          .setContent("This is the content of resource " + resourceId)
+          .setContentType("text/plain")
+          .build();
+        request.response().end(response);
       } catch (Exception e) {
         request.response().status(GrpcStatus.INTERNAL).end();
       }
