@@ -199,9 +199,10 @@
   <modules>
     <module>vertx-grpc-common</module>
     <module>vertx-grpc-transcoding</module>
-    <module>vertx-jrpc-transcoding</module>
-    <module>vertx-jrpc-mcp</module>
-    <module>vertx-jrpc-mcp-sample</module>
+    <module>vertx-mcp-json-rpc</module>
+    <module>vertx-mcp</module>
+    <module>vertx-mcp-bridge-grpc</module>
+    <module>vertx-mcp-sample</module>
     <module>vertx-grpc-server</module>
     <module>vertx-grpc-reflection</module>
     <module>vertx-grpc-health</module>
