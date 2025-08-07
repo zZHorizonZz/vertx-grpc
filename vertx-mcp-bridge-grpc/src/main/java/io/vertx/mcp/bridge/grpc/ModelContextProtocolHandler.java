@@ -1,4 +1,4 @@
-package io.vertx.mcp.bridge.grpc.impl;
+package io.vertx.mcp.bridge.grpc;
 
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -10,6 +10,7 @@ import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.core.json.JsonObject;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.server.GrpcServer;
+import io.vertx.mcp.bridge.grpc.impl.ModelContextProtocolProxyRequest;
 import io.vertx.mcp.jrpc.model.JsonRpcError;
 import io.vertx.mcp.jrpc.model.JsonRpcRequest;
 

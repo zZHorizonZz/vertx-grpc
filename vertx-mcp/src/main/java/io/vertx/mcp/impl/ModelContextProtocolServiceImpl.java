@@ -1,4 +1,4 @@
-package io.vertx.mcp.bridge.grpc.impl;
+package io.vertx.mcp.impl;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;

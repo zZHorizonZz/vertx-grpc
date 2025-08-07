@@ -16,9 +16,9 @@ import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.Service;
 import io.vertx.mcp.ModelContextProtocolOptions;
+import io.vertx.mcp.ModelContextProtocolService;
 import io.vertx.mcp.bridge.grpc.ModelContextProtocolBridge;
-import io.vertx.mcp.bridge.grpc.impl.ModelContextProtocolServiceImpl;
-import io.vertx.mcp.bridge.grpc.impl.ModelContextProtocolHandler;
+import io.vertx.mcp.bridge.grpc.ModelContextProtocolHandler;
 import io.vertx.mcp.jrpc.model.JsonRpcRequest;
 import io.vertx.mcp.jrpc.model.JsonRpcResponse;
 import io.vertx.tests.server.grpc.web.*;
@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Test for ModelContextProtocolBridge demonstrating full jrpc-mcp functionality.
+ * Test for ModelContextProtocolBridgeImpl demonstrating full jrpc-mcp functionality.
  */
 @RunWith(VertxUnitRunner.class)
 public class ModelContextProtocolBridgeTest {
@@ -57,14 +57,14 @@ public class ModelContextProtocolBridgeTest {
     grpcServer = GrpcServer.server(vertx);
 
     // Create MCP service
-    ModelContextProtocolServiceImpl mcpService = new ModelContextProtocolServiceImpl(new ModelContextProtocolOptions());
+    ModelContextProtocolService mcpService = ModelContextProtocolService.create(new ModelContextProtocolOptions());
     TestService testService = new TestService();
 
     // Register the calculator service
     grpcServer.addService(testService);
 
     // Create and configure bridge
-    new ModelContextProtocolBridge(vertx, mcpService).bind(grpcServer);
+    ModelContextProtocolBridge.create(vertx, mcpService).bind(grpcServer);
 
     // Create HTTP server with JSON-RPC handler
     httpServer = vertx.createHttpServer(new HttpServerOptions().setPort(port))
@@ -247,7 +247,7 @@ public class ModelContextProtocolBridgeTest {
 
     // Create bridge without HTTP client configuration
     ModelContextProtocolServiceImpl mcpService = new ModelContextProtocolServiceImpl(vertx);
-    ModelContextProtocolBridge bridgeWithoutHttp = new ModelContextProtocolBridge(vertx, mcpService);
+    ModelContextProtocolBridgeImpl bridgeWithoutHttp = new ModelContextProtocolBridgeImpl(vertx, mcpService);
 
     ModelContextProtocolTool tool = bridgeWithoutHttp.createBridgeClientTool(
       "test-tool",

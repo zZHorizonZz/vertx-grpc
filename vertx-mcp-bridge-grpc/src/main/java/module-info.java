@@ -1,8 +1,10 @@
-module io.vertx.mcp {
+module io.vertx.mcp.bridge.grpc {
   requires io.vertx.jsonschema;
   requires io.vertx.codegen.api;
   requires io.vertx.grpc.server;
+
   requires io.vertx.mcp.jrpc;
+  requires io.vertx.mcp;
 
   requires com.google.protobuf;
   requires io.vertx.grpc.common;
@@ -17,7 +19,6 @@ module io.vertx.mcp {
   requires io.vertx.core;
 
   exports io.vertx.mcp.bridge.grpc;
-  exports io.vertx.mcp.bridge.grpc.impl to io.vertx.tests.mcp.bridge.grpc;
 
   provides io.vertx.grpc.server.impl.GrpcHttpInvoker with io.vertx.mcp.bridge.grpc.impl.ModelContextProtocolHttpInvoker;
 }

@@ -32,7 +32,7 @@
   <dependencies>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-mcp</artifactId>
+      <artifactId>vertx-mcp-bridge-grpc</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
