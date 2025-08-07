@@ -3,12 +3,11 @@ package io.vertx.mcp.bridge.grpc.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.mcp.ModelContextProtocolResourceProvider;
-import io.vertx.mcp.ModelContextProtocolResourceTemplate;
-import io.vertx.mcp.ModelContextProtocolService;
 import io.vertx.jrpc.mcp.proto.ResourceTemplate;
 import io.vertx.jrpc.mcp.proto.ResourcesTemplatesListRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesTemplatesListResponse;
+import io.vertx.mcp.ModelContextProtocolResourceTemplate;
+import io.vertx.mcp.ModelContextProtocolService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,7 +15,7 @@ import java.util.stream.Collectors;
 /**
  * Handler for the ResourcesTemplatesList RPC method.
  */
-public class ResourceTemplatesListHandler extends BaseHandler<ResourcesTemplatesListRequest, ResourcesTemplatesListResponse> {
+public class ResourcesTemplatesListHandler extends BaseHandler<ResourcesTemplatesListRequest, ResourcesTemplatesListResponse> {
 
   public static final ServiceMethod<ResourcesTemplatesListRequest, ResourcesTemplatesListResponse> SERVICE_METHOD = ServiceMethod.server(
     ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
@@ -30,7 +29,7 @@ public class ResourceTemplatesListHandler extends BaseHandler<ResourcesTemplates
    * @param server the gRPC server
    * @param service the MCP service implementation
    */
-  public ResourceTemplatesListHandler(GrpcServer server, ModelContextProtocolService service) {
+  public ResourcesTemplatesListHandler(GrpcServer server, ModelContextProtocolService service) {
     super(server, service);
   }
 
@@ -39,29 +38,21 @@ public class ResourceTemplatesListHandler extends BaseHandler<ResourcesTemplates
     request.handler(req -> {
       try {
         String filter = req.getCursor();
-        List<ModelContextProtocolResourceProvider> providers = service.resourcesList();
-        if (filter != null && !filter.isEmpty()) {
-          providers = providers.stream()
-            .filter(p -> {
-              ModelContextProtocolResourceTemplate t = p.template();
-              return t.name().contains(filter) || t.description().contains(filter) || t.title().contains(filter);
-            })
+        List<ModelContextProtocolResourceTemplate> templates = service.resourcesTemplatesList();
+        if (!filter.isEmpty()) {
+          templates = templates.stream()
+            .filter(t -> t.name().contains(filter) || t.description().contains(filter) || t.title().contains(filter))
             .collect(Collectors.toList());
         }
 
-        List<ResourceTemplate> templates = providers.stream().map(p -> {
-          ModelContextProtocolResourceTemplate t = p.template();
-          return ResourceTemplate.newBuilder()
+        ResourcesTemplatesListResponse response = ResourcesTemplatesListResponse.newBuilder()
+          .addAllResourceTemplates(templates.stream().map(t -> ResourceTemplate.newBuilder()
             .setUriTemplate(t.uriTemplate())
             .setName(t.name())
             .setTitle(t.title())
             .setDescription(t.description())
             .setMimeType(t.mimeType())
-            .build();
-        }).collect(Collectors.toList());
-
-        ResourcesTemplatesListResponse response = ResourcesTemplatesListResponse.newBuilder()
-          .addAllResourceTemplates(templates)
+            .build()).collect(Collectors.toList()))
           .build();
         request.response().end(response);
       } catch (Exception e) {

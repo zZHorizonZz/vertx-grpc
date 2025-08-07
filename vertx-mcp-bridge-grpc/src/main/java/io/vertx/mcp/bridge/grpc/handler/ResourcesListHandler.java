@@ -1,14 +1,16 @@
 package io.vertx.mcp.bridge.grpc.handler;
 
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.mcp.ModelContextProtocolResourceProvider;
-import io.vertx.mcp.ModelContextProtocolService;
-import io.vertx.mcp.ModelContextProtocolResourceTemplate;
 import io.vertx.jrpc.mcp.proto.Resource;
 import io.vertx.jrpc.mcp.proto.ResourcesListRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesListResponse;
+import io.vertx.mcp.ModelContextProtocolResource;
+import io.vertx.mcp.ModelContextProtocolResourceProvider;
+import io.vertx.mcp.ModelContextProtocolService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,33 +41,36 @@ public class ResourcesListHandler extends BaseHandler<ResourcesListRequest, Reso
     request.handler(req -> {
       try {
         String filter = req.getCursor();
-        List<ModelContextProtocolResourceProvider> providers = service.resourcesList();
-        if (!filter.isEmpty()) {
-          providers = providers.stream()
-            .filter(p -> {
-              ModelContextProtocolResourceTemplate t = p.template();
-              return t.name().contains(filter) || t.description().contains(filter) || t.title().contains(filter);
-            })
-            .collect(Collectors.toList());
-        }
-        List<Resource> resources = providers.stream().map(p -> {
-          ModelContextProtocolResourceTemplate t = p.template();
-          return Resource.newBuilder()
-            .setUri(t.uriTemplate())
-            .setName(t.name())
-            .setTitle(t.title())
-            .setDescription(t.description())
-            .setMimeType(t.mimeType())
-            .build();
-        }).collect(Collectors.toList());
-
-        ResourcesListResponse response = ResourcesListResponse.newBuilder()
-          .addAllResources(resources)
-          .build();
-        request.response().end(response);
+        resourcesList(filter)
+          .onSuccess(resources -> {
+            ResourcesListResponse.Builder builder = ResourcesListResponse.newBuilder();
+            resources.forEach(res -> builder.addResources(buildResource(res)));
+            request.response().end(builder.build());
+          })
+          .onFailure(err -> request.response().status(GrpcStatus.INTERNAL).end());
       } catch (Exception e) {
         request.response().status(GrpcStatus.INTERNAL).end();
       }
     });
+  }
+
+  private Future<List<ModelContextProtocolResource>> resourcesList(String filter) {
+    List<ModelContextProtocolResourceProvider> providers = service.resourcesList();
+    return Future
+      .all(providers.stream().map(provider -> provider
+          .apply(null)
+          .map(res -> res.stream().filter(r -> r.name().contains(filter) || r.description().contains(filter) || r.title().contains(filter)).collect(Collectors.toList())))
+        .collect(Collectors.toList()))
+      .map(CompositeFuture::list);
+  }
+
+  private Resource buildResource(ModelContextProtocolResource res) {
+    return Resource.newBuilder()
+      .setUri(res.uri().toString())
+      .setName(res.name())
+      .setTitle(res.title())
+      .setDescription(res.description())
+      .setMimeType(res.mimeType())
+      .build();
   }
 }

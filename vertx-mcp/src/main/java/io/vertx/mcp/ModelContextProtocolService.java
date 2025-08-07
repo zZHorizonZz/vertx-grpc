@@ -22,11 +22,15 @@ public interface ModelContextProtocolService {
 
   void registerTool(ModelContextProtocolTool tool);
 
+  void registerResourceTemplate(ModelContextProtocolResourceTemplate template);
+
   void registerResourceProvider(ModelContextProtocolResourceProvider resource);
 
   void registerPromptProvider(ModelContextProtocolPromptProvider prompt);
 
   List<ModelContextProtocolTool> toolsList();
+
+  List<ModelContextProtocolResourceTemplate> resourcesTemplatesList();
 
   List<ModelContextProtocolResourceProvider> resourcesList();
 

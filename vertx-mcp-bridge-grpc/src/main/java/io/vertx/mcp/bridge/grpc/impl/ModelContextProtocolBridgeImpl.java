@@ -96,7 +96,17 @@ public class ModelContextProtocolBridgeImpl implements ModelContextProtocolBridg
           method,
           methodDescriptor
         );
+
+        ModelContextProtocolResourceTemplate template = ModelContextProtocolResourceTemplate.create(
+          methodDescriptor.getName(),
+          methodDescriptor.getName(),
+          methodDescriptor.getName(),
+          "http://localhost" + path,
+          "application/json"
+        );
+
         this.service.registerResourceProvider(resourceProvider);
+        this.service.registerResourceTemplate(template);
         //return; TODO: Better option processing?
       }
 
@@ -116,7 +126,7 @@ public class ModelContextProtocolBridgeImpl implements ModelContextProtocolBridg
     server.callHandler(ToolsListHandler.SERVICE_METHOD, new ToolsListHandler(server, service));
     server.callHandler(ToolsCallHandler.SERVICE_METHOD, new ToolsCallHandler(server, service));
     server.callHandler(ResourcesListHandler.SERVICE_METHOD, new ResourcesListHandler(server, service));
-    server.callHandler(ResourceTemplatesListHandler.SERVICE_METHOD, new ResourceTemplatesListHandler(server, service));
+    server.callHandler(ResourcesTemplatesListHandler.SERVICE_METHOD, new ResourcesTemplatesListHandler(server, service));
     server.callHandler(ResourcesReadHandler.SERVICE_METHOD, new ResourcesReadHandler(server, service));
     server.callHandler(ResourcesSubscribeHandler.SERVICE_METHOD, new ResourcesSubscribeHandler(server, service));
     server.callHandler(ResourcesUnsubscribeHandler.SERVICE_METHOD, new ResourcesUnsubscribeHandler(server, service));
@@ -281,6 +291,8 @@ public class ModelContextProtocolBridgeImpl implements ModelContextProtocolBridg
 
     @Override
     public Future<List<ModelContextProtocolResource>> apply(URI uri) {
+      if(uri == null) return Future.succeededFuture(List.of());
+
       PathMatcherLookupResult res = pathMatcher.lookup(this.method.name(), uri.getPath(), "");
       if (res == null) {
         return Future.succeededFuture(null);
@@ -355,17 +367,6 @@ public class ModelContextProtocolBridgeImpl implements ModelContextProtocolBridg
         "application/json",
         Future.succeededFuture(buffer == null ? "" : buffer.toString())
       )));
-    }
-
-    @Override
-    public ModelContextProtocolResourceTemplate template() {
-      return ModelContextProtocolResourceTemplate.create(
-        methodDescriptor.getName(),
-        methodDescriptor.getName(),
-        methodDescriptor.getName(),
-        "http://localhost" + path,
-        "application/json"
-      );
     }
   }
 }

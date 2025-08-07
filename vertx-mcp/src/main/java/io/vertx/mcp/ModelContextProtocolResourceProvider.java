@@ -7,5 +7,5 @@ import java.util.List;
 import java.util.function.Function;
 
 public interface ModelContextProtocolResourceProvider extends Function<URI, Future<List<ModelContextProtocolResource>>> {
-  ModelContextProtocolResourceTemplate template();
+
 }

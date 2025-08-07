@@ -18,7 +18,7 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
   private final Map<Integer, Promise<?>> activeRequests = new ConcurrentHashMap<>();
 
   private final List<ModelContextProtocolTool> tools = new ArrayList<>();
-  private final List<ModelContextProtocolResourceTemplate> resourceTemplates = new ArrayList<>();
+  private final List<ModelContextProtocolResourceTemplate> resourcesTemplates = new ArrayList<>();
   private final List<ModelContextProtocolResourceProvider> resourceProviders = new ArrayList<>();
   private final List<ModelContextProtocolPromptProvider> promptProviders = new ArrayList<>();
 
@@ -59,6 +59,11 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
   }
 
   @Override
+  public void registerResourceTemplate(ModelContextProtocolResourceTemplate template) {
+    resourcesTemplates.add(template);
+  }
+
+  @Override
   public void registerResourceProvider(ModelContextProtocolResourceProvider resource) {
     resourceProviders.add(resource);
   }
@@ -71,6 +76,11 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
   @Override
   public List<ModelContextProtocolTool> toolsList() {
     return Collections.unmodifiableList(tools);
+  }
+
+  @Override
+  public List<ModelContextProtocolResourceTemplate> resourcesTemplatesList() {
+    return Collections.unmodifiableList(resourcesTemplates);
   }
 
   @Override
