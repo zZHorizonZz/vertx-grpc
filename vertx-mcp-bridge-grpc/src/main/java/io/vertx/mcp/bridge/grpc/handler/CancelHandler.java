@@ -3,7 +3,7 @@ package io.vertx.mcp.bridge.grpc.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.mcp.ModelContextProtocolServer;
+import io.vertx.mcp.server.ModelContextProtocolServer;
 import io.vertx.jrpc.mcp.proto.CancelRequest;
 import io.vertx.jrpc.mcp.proto.CancelResponse;
 
@@ -13,7 +13,7 @@ import io.vertx.jrpc.mcp.proto.CancelResponse;
 public class CancelHandler extends BaseHandler<CancelRequest, CancelResponse> {
 
   public static final ServiceMethod<CancelRequest, CancelResponse> SERVICE_METHOD = ServiceMethod.server(
-    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolServer"),
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
     "Cancel",
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(CancelRequest.newBuilder()));

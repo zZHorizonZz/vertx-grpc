@@ -7,7 +7,7 @@ import io.vertx.jrpc.mcp.proto.ResourceTemplate;
 import io.vertx.jrpc.mcp.proto.ResourcesTemplatesListRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesTemplatesListResponse;
 import io.vertx.mcp.ModelContextProtocolResourceTemplate;
-import io.vertx.mcp.ModelContextProtocolServer;
+import io.vertx.mcp.server.ModelContextProtocolServer;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 public class ResourcesTemplatesListHandler extends BaseHandler<ResourcesTemplatesListRequest, ResourcesTemplatesListResponse> {
 
   public static final ServiceMethod<ResourcesTemplatesListRequest, ResourcesTemplatesListResponse> SERVICE_METHOD = ServiceMethod.server(
-    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolServer"),
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
     "ResourcesTemplatesList",
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(ResourcesTemplatesListRequest.newBuilder()));

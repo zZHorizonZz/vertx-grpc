@@ -8,7 +8,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.mcp.ModelContextProtocolServer;
+import io.vertx.mcp.server.ModelContextProtocolServer;
 import io.vertx.mcp.ModelContextProtocolTool;
 import io.vertx.jrpc.mcp.proto.Tool;
 import io.vertx.jrpc.mcp.proto.ToolsListRequest;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class ToolsListHandler extends BaseHandler<ToolsListRequest, ToolsListResponse> {
 
   public static final ServiceMethod<ToolsListRequest, ToolsListResponse> SERVICE_METHOD = ServiceMethod.server(
-    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolServer"),
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
     "ToolsList",
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(ToolsListRequest.newBuilder()));

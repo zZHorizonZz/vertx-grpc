@@ -1,6 +1,7 @@
-package io.vertx.mcp;
+package io.vertx.mcp.server;
 
 import io.vertx.core.Future;
+import io.vertx.mcp.ModelContextProtocolResource;
 
 import java.net.URI;
 import java.util.List;

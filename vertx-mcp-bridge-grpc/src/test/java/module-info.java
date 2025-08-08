@@ -12,6 +12,7 @@ open module io.vertx.tests.mcp.bridge.grpc {
   requires io.vertx.mcp.jrpc;
 
   requires com.google.protobuf;
+  requires io.vertx.mcp.server;
 
   exports io.vertx.tests.mcp.bridge.grpc;
 }

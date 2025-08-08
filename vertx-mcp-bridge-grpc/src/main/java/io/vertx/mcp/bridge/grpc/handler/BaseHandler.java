@@ -3,7 +3,7 @@ package io.vertx.mcp.bridge.grpc.handler;
 import io.vertx.core.Handler;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.mcp.ModelContextProtocolServer;
+import io.vertx.mcp.server.ModelContextProtocolServer;
 
 /**
  * Base handler class for all MCP service handlers.

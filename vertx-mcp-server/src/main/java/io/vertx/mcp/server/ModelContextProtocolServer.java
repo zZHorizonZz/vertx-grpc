@@ -1,8 +1,9 @@
-package io.vertx.mcp;
+package io.vertx.mcp.server;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mcp.impl.ModelContextProtocolServerImpl;
+import io.vertx.mcp.*;
+import io.vertx.mcp.server.impl.ModelContextProtocolServerImpl;
 
 import java.util.List;
 

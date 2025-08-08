@@ -17,6 +17,7 @@ module io.vertx.mcp.bridge.grpc {
   requires io.grpc.protobuf;
   requires io.vertx.codegen.json;
   requires io.vertx.core;
+  requires io.vertx.mcp.server;
 
   exports io.vertx.mcp.bridge.grpc;
 

@@ -16,7 +16,7 @@ import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.Service;
 import io.vertx.mcp.ModelContextProtocolOptions;
-import io.vertx.mcp.ModelContextProtocolServer;
+import io.vertx.mcp.server.ModelContextProtocolServer;
 import io.vertx.mcp.bridge.grpc.ModelContextProtocolBridge;
 import io.vertx.mcp.jrpc.model.JsonRpcRequest;
 import io.vertx.mcp.jrpc.model.JsonRpcResponse;

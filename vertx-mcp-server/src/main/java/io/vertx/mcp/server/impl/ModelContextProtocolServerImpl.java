@@ -1,9 +1,12 @@
-package io.vertx.mcp.impl;
+package io.vertx.mcp.server.impl;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mcp.*;
+import io.vertx.mcp.server.ModelContextProtocolPromptProvider;
+import io.vertx.mcp.server.ModelContextProtocolResourceProvider;
+import io.vertx.mcp.server.ModelContextProtocolServer;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

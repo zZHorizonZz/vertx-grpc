@@ -26,13 +26,15 @@ import io.vertx.mcp.jrpc.model.JsonRpcError;
 import io.vertx.mcp.jrpc.model.JsonRpcRequest;
 import io.vertx.mcp.proto.BlobResourceContent;
 import io.vertx.mcp.proto.TextResourceContent;
+import io.vertx.mcp.server.ModelContextProtocolResourceProvider;
+import io.vertx.mcp.server.ModelContextProtocolServer;
 
 import java.net.URI;
 import java.util.List;
 
 public class ModelContextProtocolBridgeImpl implements ModelContextProtocolBridge {
 
-  private static final ServiceName SERVICE_NAME = ServiceName.create("io.modelcontextprotocol.ModelContextProtocolServer");
+  private static final ServiceName SERVICE_NAME = ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService");
   private static final Descriptors.ServiceDescriptor SERVICE_DESCRIPTOR = ModelContextProtocolProto.getDescriptor().findServiceByName("ModelContextProtocolServer");
 
   public static final Descriptors.Descriptor TEXT_RESOURCE_DESCRIPTOR = TextResourceContent.getDescriptor();
@@ -299,11 +301,6 @@ public class ModelContextProtocolBridgeImpl implements ModelContextProtocolBridg
 
     private boolean isStructured() {
       return outputDescriptor != SchemaUtil.CONTENT_DESCRIPTOR && outputDescriptor != SchemaUtil.TEXT_CONTENT_DESCRIPTOR && outputDescriptor != SchemaUtil.IMAGE_CONTENT_DESCRIPTOR && outputDescriptor != SchemaUtil.AUDIO_CONTENT_DESCRIPTOR && outputDescriptor != SchemaUtil.RESOURCE_LINK_CONTENT_DESCRIPTOR;
-    }
-
-    @Override
-    public ModelContextProtocolServer service() {
-      return service;
     }
 
     @Override
