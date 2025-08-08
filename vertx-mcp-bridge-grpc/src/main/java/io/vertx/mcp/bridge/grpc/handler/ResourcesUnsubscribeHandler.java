@@ -3,7 +3,7 @@ package io.vertx.mcp.bridge.grpc.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.mcp.ModelContextProtocolService;
+import io.vertx.mcp.ModelContextProtocolServer;
 import io.vertx.jrpc.mcp.proto.ResourcesUnsubscribeRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesUnsubscribeResponse;
 
@@ -13,7 +13,7 @@ import io.vertx.jrpc.mcp.proto.ResourcesUnsubscribeResponse;
 public class ResourcesUnsubscribeHandler extends BaseHandler<ResourcesUnsubscribeRequest, ResourcesUnsubscribeResponse> {
 
   public static final ServiceMethod<ResourcesUnsubscribeRequest, ResourcesUnsubscribeResponse> SERVICE_METHOD = ServiceMethod.server(
-    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolServer"),
     "ResourcesUnsubscribe",
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(ResourcesUnsubscribeRequest.newBuilder()));
@@ -24,7 +24,7 @@ public class ResourcesUnsubscribeHandler extends BaseHandler<ResourcesUnsubscrib
    * @param server the gRPC server
    * @param service the MCP service implementation
    */
-  public ResourcesUnsubscribeHandler(GrpcServer server, ModelContextProtocolService service) {
+  public ResourcesUnsubscribeHandler(GrpcServer server, ModelContextProtocolServer service) {
     super(server, service);
   }
 

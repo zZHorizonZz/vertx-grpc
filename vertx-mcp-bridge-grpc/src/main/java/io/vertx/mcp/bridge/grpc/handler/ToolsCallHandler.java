@@ -11,7 +11,7 @@ import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.mcp.ContentDataType;
-import io.vertx.mcp.ModelContextProtocolService;
+import io.vertx.mcp.ModelContextProtocolServer;
 import io.vertx.jrpc.mcp.proto.ToolsCallRequest;
 import io.vertx.jrpc.mcp.proto.ToolsCallResponse;
 
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class ToolsCallHandler extends BaseHandler<ToolsCallRequest, ToolsCallResponse> {
 
   public static final ServiceMethod<ToolsCallRequest, ToolsCallResponse> SERVICE_METHOD = ServiceMethod.server(
-    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolServer"),
     "ToolsCall",
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(ToolsCallRequest.newBuilder()));
@@ -33,7 +33,7 @@ public class ToolsCallHandler extends BaseHandler<ToolsCallRequest, ToolsCallRes
   private final JsonFormat.Parser jsonParser = JsonFormat.parser();
   private final JsonFormat.Printer jsonPrinter = JsonFormat.printer();
 
-  public ToolsCallHandler(GrpcServer server, ModelContextProtocolService service) {
+  public ToolsCallHandler(GrpcServer server, ModelContextProtocolServer service) {
     super(server, service);
   }
 

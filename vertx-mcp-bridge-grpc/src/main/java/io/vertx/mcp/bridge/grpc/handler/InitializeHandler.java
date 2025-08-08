@@ -7,19 +7,19 @@ import io.vertx.core.Future;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.mcp.ModelContextProtocolService;
+import io.vertx.mcp.ModelContextProtocolServer;
 import io.vertx.jrpc.mcp.proto.InitializeRequest;
 import io.vertx.jrpc.mcp.proto.InitializeResponse;
 
 public class InitializeHandler extends BaseHandler<InitializeRequest, InitializeResponse> {
 
   public static final ServiceMethod<InitializeRequest, InitializeResponse> SERVICE_METHOD = ServiceMethod.server(
-    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolServer"),
     "Initialize",
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(InitializeRequest.newBuilder()));
 
-  public InitializeHandler(GrpcServer server, ModelContextProtocolService service) {
+  public InitializeHandler(GrpcServer server, ModelContextProtocolServer service) {
     super(server, service);
   }
 

@@ -8,5 +8,5 @@ import java.util.function.Function;
 public interface ModelContextProtocolPromptProvider extends Function<JsonObject, Future<JsonObject>> {
   String id();
 
-  ModelContextProtocolService service();
+  ModelContextProtocolServer service();
 }

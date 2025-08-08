@@ -1,0 +1,245 @@
+syntax = "proto3";
+
+package io.modelcontextprotocol.v1;
+
+import "google/protobuf/descriptor.proto";
+
+option java_multiple_files = true;
+option java_package = "io.vertx.mcp.proto";
+option java_outer_classname = "ModelContextProtocolAnnotations";
+
+// Extension for annotating gRPC methods that should be exposed as MCP tools
+extend google.protobuf.MethodOptions {
+  McpToolMapping mcp_tool = 50001;
+}
+
+// Extension for annotating gRPC methods that should be exposed as MCP resources
+extend google.protobuf.MethodOptions {
+  McpResourceMapping mcp_resource = 50002;
+}
+
+// Extension for annotating gRPC services with MCP server info
+extend google.protobuf.ServiceOptions {
+  McpBridgeConfig mcp_bridge = 50003;
+}
+
+// Extension for annotating message fields with MCP parameter mapping
+extend google.protobuf.FieldOptions {
+  McpParameterMapping mcp_param = 50004;
+}
+
+// Maps a gRPC method to an MCP tool
+message McpToolMapping {
+  // The MCP tool name that will be exposed
+  string tool_name = 1;
+
+  // Tool description for MCP clients
+  string description = 2;
+
+  // How to map MCP arguments to gRPC request fields
+  McpArgumentMapping argument_mapping = 3;
+
+  // How to map gRPC response to MCP tool result
+  McpResultMapping result_mapping = 4;
+
+  // Whether this tool is enabled
+  bool enabled = 5;
+
+  // Tool category/tags for organization
+  repeated string tags = 6;
+}
+
+// Maps a gRPC method to an MCP resource
+message McpResourceMapping {
+  // The MCP resource URI pattern (e.g., "file:///{path}")
+  string uri_pattern = 1;
+
+  // Resource name/type
+  string name = 2;
+
+  // Resource description
+  string description = 3;
+
+  // How to extract resource parameters from URI
+  McpUriMapping uri_mapping = 4;
+
+  // How to map gRPC response to MCP resource content
+  McpResourceResultMapping result_mapping = 5;
+
+  // MIME type of the resource content
+  string mime_type = 6;
+
+  // Whether this resource is enabled
+  bool enabled = 7;
+}
+
+// Bridge configuration for the entire service
+message McpBridgeConfig {
+  // Server name exposed to MCP clients
+  string server_name = 1;
+
+  // Server version
+  string version = 2;
+
+  // Whether to auto-generate tool schemas from proto
+  bool auto_generate_schemas = 3;
+
+  // Default error handling strategy
+  ErrorHandlingStrategy error_strategy = 4;
+
+  // Request/response transformation settings
+  TransformationConfig transformation = 5;
+}
+
+// How to map MCP tool arguments to gRPC request fields
+message McpArgumentMapping {
+  // Direct field mappings: mcp_arg_name -> grpc_field_path
+  map<string, string> field_mappings = 1;
+
+  // Custom argument transformation rules
+  repeated ArgumentTransform transforms = 2;
+
+  // Whether to pass through unmapped arguments as metadata
+  bool pass_through_extra = 3;
+}
+
+// Individual argument transformation
+message ArgumentTransform {
+  string mcp_argument = 1;
+  string grpc_field = 2;
+  TransformType transform_type = 3;
+  string transform_expression = 4; // For custom transforms
+}
+
+// How to map gRPC response to MCP tool result
+message McpResultMapping {
+  // How to extract the main content
+  ContentExtraction content_extraction = 1;
+
+  // Whether to include raw gRPC response in metadata
+  bool include_raw_response = 2;
+
+  // Custom result transformations
+  repeated ResultTransform transforms = 3;
+}
+
+// Content extraction from gRPC response
+message ContentExtraction {
+  // Field path to extract as main content
+  string content_field = 1;
+
+  // Content type (text, json, binary)
+  ContentType content_type = 2;
+
+  // Whether to serialize entire response if no specific field
+  bool serialize_full_response = 3;
+
+  // Template for formatting the content
+  string content_template = 4;
+}
+
+// URI parameter extraction for resources
+message McpUriMapping {
+  // Extract parts of URI to gRPC fields
+  map<string, string> uri_parameters = 1;
+
+  // Query parameter mappings
+  map<string, string> query_parameters = 2;
+}
+
+// Resource result mapping
+message McpResourceResultMapping {
+  // Field containing the resource content
+  string content_field = 1;
+
+  // Field containing the resource metadata
+  string metadata_field = 2;
+
+  // Content encoding/format
+  string encoding = 3;
+}
+
+// Parameter mapping for individual fields
+message McpParameterMapping {
+  // The MCP parameter name this field maps to
+  string mcp_name = 1;
+
+  // Parameter description for MCP schema
+  string description = 2;
+
+  // Whether this parameter is required in MCP
+  bool required = 3;
+
+  // Default value if not provided by MCP
+  string default_value = 4;
+
+  // Validation rules
+  ParameterValidation validation = 5;
+}
+
+// Validation rules for parameters
+message ParameterValidation {
+  // Minimum/maximum values for numeric types
+  double min_value = 1;
+  double max_value = 2;
+
+  // String length constraints
+  int32 min_length = 3;
+  int32 max_length = 4;
+
+  // Regex pattern for string validation
+  string pattern = 5;
+
+  // Allowed enum values
+  repeated string enum_values = 6;
+}
+
+// Result transformation
+message ResultTransform {
+  string source_field = 1;
+  string target_field = 2;
+  TransformType transform_type = 3;
+  string transform_expression = 4;
+}
+
+// Transformation configuration
+message TransformationConfig {
+  // Default request timeout
+  int32 timeout_seconds = 1;
+
+  // Maximum request/response size
+  int64 max_request_size = 2;
+  int64 max_response_size = 3;
+
+  // Whether to validate requests against proto schemas
+  bool validate_requests = 4;
+
+  // Custom metadata to add to gRPC calls
+  map<string, string> default_metadata = 5;
+}
+
+// Enums
+enum TransformType {
+  TRANSFORM_TYPE_UNSPECIFIED = 0;
+  TRANSFORM_TYPE_DIRECT = 1;        // Direct mapping
+  TRANSFORM_TYPE_JSON_PARSE = 2;    // Parse JSON string
+  TRANSFORM_TYPE_JSON_STRINGIFY = 3; // Convert to JSON string
+  TRANSFORM_TYPE_BASE64_ENCODE = 4;  // Base64 encode
+  TRANSFORM_TYPE_BASE64_DECODE = 5;  // Base64 decode
+  TRANSFORM_TYPE_CUSTOM = 6;         // Custom expression
+}
+
+enum ContentType {
+  CONTENT_TYPE_UNSPECIFIED = 0;
+  CONTENT_TYPE_TEXT = 1;
+  CONTENT_TYPE_JSON = 2;
+  CONTENT_TYPE_BINARY = 3;
+  CONTENT_TYPE_XML = 4;
+}
+
+enum ErrorHandlingStrategy {
+  ERROR_STRATEGY_UNSPECIFIED = 0;
+  ERROR_STRATEGY_PROPAGATE = 1;     // Pass gRPC errors through
+  ERROR_STRATEGY_TRANSFORM = 2;     // Transform to MCP error format
+  ERROR_STRATEGY_SUPPRESS = 3;      // Convert errors to tool results
+}

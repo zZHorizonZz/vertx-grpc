@@ -6,7 +6,7 @@ import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.mcp.ModelContextProtocolService;
+import io.vertx.mcp.ModelContextProtocolServer;
 import io.vertx.jrpc.mcp.proto.PingRequest;
 import io.vertx.jrpc.mcp.proto.PingResponse;
 
@@ -16,12 +16,12 @@ import io.vertx.jrpc.mcp.proto.PingResponse;
 public class PingHandler extends BaseHandler<PingRequest, PingResponse> {
 
   public static final ServiceMethod<PingRequest, PingResponse> SERVICE_METHOD = ServiceMethod.server(
-    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolServer"),
     "Ping",
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(PingRequest.newBuilder()));
 
-  public PingHandler(GrpcServer server, ModelContextProtocolService service) {
+  public PingHandler(GrpcServer server, ModelContextProtocolServer service) {
     super(server, service);
   }
 

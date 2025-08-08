@@ -2,14 +2,14 @@ package io.vertx.mcp;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mcp.impl.ModelContextProtocolServiceImpl;
+import io.vertx.mcp.impl.ModelContextProtocolServerImpl;
 
 import java.util.List;
 
-public interface ModelContextProtocolService {
+public interface ModelContextProtocolServer {
 
-  static ModelContextProtocolService create(ModelContextProtocolOptions options) {
-    return new ModelContextProtocolServiceImpl(options);
+  static ModelContextProtocolServer create(ModelContextProtocolOptions options) {
+    return new ModelContextProtocolServerImpl(options);
   }
 
   String getProtocolVersion();

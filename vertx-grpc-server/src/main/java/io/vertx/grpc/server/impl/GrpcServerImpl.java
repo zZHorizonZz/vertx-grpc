@@ -10,11 +10,7 @@
  */
 package io.vertx.grpc.server.impl;
 
-import io.vertx.core.Closeable;
-import io.vertx.core.Completable;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.internal.http.HttpServerRequestInternal;
@@ -68,7 +64,7 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
       .collect(Collectors.toList());
     Future
       .all(futures)
-      .<Void>mapEmpty()
+      .<Void> mapEmpty()
       .onComplete(completion);
   }
 
@@ -89,7 +85,7 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
     GrpcMethodCall methodCall = new GrpcMethodCall(httpRequest.path());
     String path = httpRequest.path();
     while (true) {
-      List<MethodCallHandler<?, ?>> mchList = getMethodHandlers(path);
+      List<MethodCallHandler<?, ?>> mchList = methodCallHandlers.get(path);
       if (mchList != null) {
         for (MethodCallHandler<?, ?> mch : mchList) {
           if (handle(mch, httpRequest, methodCall, details.protocol, details.format)) {
@@ -111,14 +107,6 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
     } else {
       httpRequest.response().setStatusCode(500).end();
     }
-  }
-
-  private List<MethodCallHandler<?, ?>> getMethodHandlers(String path) {
-    List<MethodCallHandler<?, ?>> mchList = methodCallHandlers.entrySet().stream().filter(e -> e.getKey().equalsIgnoreCase(path)).map(Map.Entry::getValue).findFirst().orElse(null);
-    if (mchList == null) {
-      mchList = methodCallHandlers.get("/");
-    }
-    return mchList;
   }
 
   private int validate(GrpcServerRequestInspector.RequestInspectionDetails details) {
@@ -205,8 +193,8 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
   }
 
   private <Req, Resp> void handle(GrpcServerRequestImpl<Req, Resp> grpcRequest,
-                                  GrpcServerResponseImpl<Req, Resp> grpcResponse,
-                                  Handler<GrpcServerRequest<Req, Resp>> handler) {
+    GrpcServerResponseImpl<Req, Resp> grpcResponse,
+    Handler<GrpcServerRequest<Req, Resp>> handler) {
     if (options.getDeadlinePropagation() && grpcRequest.timeout() > 0L) {
       long deadline = System.currentTimeMillis() + grpcRequest.timeout;
       grpcRequest.context().putLocal(GrpcLocal.CONTEXT_LOCAL_KEY, AccessMode.CONCURRENT, new GrpcLocal(deadline));
@@ -302,7 +290,8 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
     final GrpcMessageEncoder<Resp> messageEncoder;
     final Handler<GrpcServerRequest<Req, Resp>> handler;
 
-    MethodCallHandler(ServiceMethod<Req, Resp> method, GrpcMessageDecoder<Req> messageDecoder, GrpcMessageEncoder<Resp> messageEncoder, Handler<GrpcServerRequest<Req, Resp>> handler) {
+    MethodCallHandler(ServiceMethod<Req, Resp> method, GrpcMessageDecoder<Req> messageDecoder, GrpcMessageEncoder<Resp> messageEncoder,
+      Handler<GrpcServerRequest<Req, Resp>> handler) {
       this.method = method;
       this.messageDecoder = messageDecoder;
       this.messageEncoder = messageEncoder;

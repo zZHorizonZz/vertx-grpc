@@ -1,16 +1,12 @@
 open module io.vertx.tests.mcp {
-  requires io.vertx.testing.unit;
   requires junit;
+
   requires io.vertx.core;
-  requires io.vertx.grpc.transcoding;
-  requires io.vertx.grpc.common;
-  requires io.vertx.grpc.server;
+  requires io.vertx.testing.unit;
   requires io.vertx.tests.common;
   requires io.vertx.tests.server;
-  requires com.google.protobuf;
-  requires com.google.protobuf.util;
   requires io.vertx.mcp.jrpc;
   requires io.vertx.mcp;
 
-  exports io.vertx.tests.mcp;
+  //exports io.vertx.tests.mcp;
 }

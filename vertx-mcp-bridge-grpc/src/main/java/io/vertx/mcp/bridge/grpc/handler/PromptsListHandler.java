@@ -3,12 +3,9 @@ package io.vertx.mcp.bridge.grpc.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.mcp.ModelContextProtocolPromptProvider;
-import io.vertx.mcp.ModelContextProtocolService;
+import io.vertx.mcp.ModelContextProtocolServer;
 import io.vertx.jrpc.mcp.proto.PromptsListRequest;
 import io.vertx.jrpc.mcp.proto.PromptsListResponse;
-
-import java.util.stream.Collectors;
 
 /**
  * Handler for the PromptsList RPC method.
@@ -16,7 +13,7 @@ import java.util.stream.Collectors;
 public class PromptsListHandler extends BaseHandler<PromptsListRequest, PromptsListResponse> {
 
   public static final ServiceMethod<PromptsListRequest, PromptsListResponse> SERVICE_METHOD = ServiceMethod.server(
-    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolServer"),
     "PromptsList",
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(PromptsListRequest.newBuilder()));
@@ -27,7 +24,7 @@ public class PromptsListHandler extends BaseHandler<PromptsListRequest, PromptsL
    * @param server the gRPC server
    * @param service the MCP service implementation
    */
-  public PromptsListHandler(GrpcServer server, ModelContextProtocolService service) {
+  public PromptsListHandler(GrpcServer server, ModelContextProtocolServer service) {
     super(server, service);
   }
 

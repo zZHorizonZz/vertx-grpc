@@ -3,7 +3,7 @@ package io.vertx.mcp.bridge.grpc.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.mcp.ModelContextProtocolService;
+import io.vertx.mcp.ModelContextProtocolServer;
 import io.vertx.jrpc.mcp.proto.ResourcesSubscribeRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesSubscribeResponse;
 
@@ -13,7 +13,7 @@ import io.vertx.jrpc.mcp.proto.ResourcesSubscribeResponse;
 public class ResourcesSubscribeHandler extends BaseHandler<ResourcesSubscribeRequest, ResourcesSubscribeResponse> {
 
   public static final ServiceMethod<ResourcesSubscribeRequest, ResourcesSubscribeResponse> SERVICE_METHOD = ServiceMethod.server(
-    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolServer"),
     "ResourcesSubscribe",
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(ResourcesSubscribeRequest.newBuilder()));
@@ -24,7 +24,7 @@ public class ResourcesSubscribeHandler extends BaseHandler<ResourcesSubscribeReq
    * @param server the gRPC server
    * @param service the MCP service implementation
    */
-  public ResourcesSubscribeHandler(GrpcServer server, ModelContextProtocolService service) {
+  public ResourcesSubscribeHandler(GrpcServer server, ModelContextProtocolServer service) {
     super(server, service);
   }
 

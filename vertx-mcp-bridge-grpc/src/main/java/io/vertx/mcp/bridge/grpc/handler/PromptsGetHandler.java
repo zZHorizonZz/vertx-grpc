@@ -3,7 +3,7 @@ package io.vertx.mcp.bridge.grpc.handler;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.mcp.ModelContextProtocolService;
+import io.vertx.mcp.ModelContextProtocolServer;
 import io.vertx.jrpc.mcp.proto.PromptsGetRequest;
 import io.vertx.jrpc.mcp.proto.PromptsGetResponse;
 
@@ -13,7 +13,7 @@ import io.vertx.jrpc.mcp.proto.PromptsGetResponse;
 public class PromptsGetHandler extends BaseHandler<PromptsGetRequest, PromptsGetResponse> {
 
   public static final ServiceMethod<PromptsGetRequest, PromptsGetResponse> SERVICE_METHOD = ServiceMethod.server(
-    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolServer"),
     "PromptsGet",
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(PromptsGetRequest.newBuilder()));
@@ -24,7 +24,7 @@ public class PromptsGetHandler extends BaseHandler<PromptsGetRequest, PromptsGet
    * @param server the gRPC server
    * @param service the MCP service implementation
    */
-  public PromptsGetHandler(GrpcServer server, ModelContextProtocolService service) {
+  public PromptsGetHandler(GrpcServer server, ModelContextProtocolServer service) {
     super(server, service);
   }
 

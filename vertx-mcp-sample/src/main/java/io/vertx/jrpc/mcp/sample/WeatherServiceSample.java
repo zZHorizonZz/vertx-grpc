@@ -6,7 +6,7 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.mcp.ModelContextProtocolOptions;
 import io.vertx.mcp.bridge.grpc.ModelContextProtocolBridge;
-import io.vertx.mcp.impl.ModelContextProtocolServiceImpl;
+import io.vertx.mcp.impl.ModelContextProtocolServerImpl;
 
 /**
  * Sample application demonstrating the Weather Service integration with MCP Bridge.
@@ -29,7 +29,7 @@ public class WeatherServiceSample {
     grpcServer.addService(new VertxDocumentationServiceImpl());
 
     // Create and configure MCP bridge
-    ModelContextProtocolBridge bridge = ModelContextProtocolBridge.create(vertx, new ModelContextProtocolServiceImpl(new ModelContextProtocolOptions()));
+    ModelContextProtocolBridge bridge = ModelContextProtocolBridge.create(vertx, new ModelContextProtocolServerImpl(new ModelContextProtocolOptions()));
 
     bridge.bind(grpcServer);
 

@@ -1,0 +1,153 @@
+syntax = "proto3";
+
+import "google/protobuf/struct.proto";
+
+option java_multiple_files = true;
+option java_package = "io.vertx.mcp.proto";
+option java_outer_classname = "ModelContextProtocolTypes";
+
+package io.modelcontextprotocol.v1;
+
+// Text content type
+message TextContent {
+  string text = 1 [json_name = "text"];
+  // Optional annotations
+  //Annotations annotations = 3;
+}
+
+// Image content type
+message ImageContent {
+  // Base64-encoded image data
+  string data = 1 [json_name = "data"];
+
+  // MIME type of the image
+  // e.g., "image/png", "image/jpeg", "image/svg+xml"
+  string mime_type = 2 [json_name = "mimeType"];
+
+  // Optional annotations
+  //Annotations annotations = 4;
+
+  // Optional image metadata
+  //google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message ImageMetadata {
+  int32 width = 1;
+  int32 height = 2;
+  string format = 3;
+  int64 size_bytes = 4;
+}
+
+// Audio content type
+message AudioContent {
+  // Base64-encoded audio data
+  string data = 1 [json_name = "data"];
+
+  // MIME type of the audio
+  // e.g., "audio/wav", "audio/mp3", "audio/ogg"
+  string mime_type = 2 [json_name = "mimeType"];
+
+  // Optional annotations
+  //Annotations annotations = 4;
+
+  // Optional audio metadata
+  //google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+// Resource link content type
+message ResourceLinkContent {
+  // URI of the resource
+  // e.g., "file:///project/src/main.rs"
+  string uri = 1 [json_name = "uri"];
+
+  // Display name for the resource
+  string name = 2 [json_name = "name"];
+
+  // Description of the resource
+  string description = 3 [json_name = "description"];
+
+  // MIME type of the resource
+  // e.g., "text/x-rust", "application/json"
+  string mime_type = 4 [json_name = "mimeType"];
+
+  // Optional annotations
+  //Annotations annotations = 6;
+}
+
+// Embedded resource content type
+message EmbeddedResourceContent {
+  // The embedded resource
+  //Resource resource = 2;
+}
+
+// ============================================================================
+// Resource Definition
+// ============================================================================
+
+// Resource represents a complete resource with its content
+/*message Resource {
+  // URI identifying the resource
+  string uri = 1;
+
+  // Display title for the resource
+  string title = 2;
+
+  // MIME type of the resource
+  string mime_type = 3;
+
+  // Resource content - can be one of multiple types
+  oneof content {
+    // Text content
+    string text = 4;
+
+    // Binary content (base64-encoded)
+    string blob = 5;
+
+    // JSON content (as string)
+    string json = 6;
+  }
+
+  // Optional annotations
+  //Annotations annotations = 7;
+
+  // Optional resource metadata
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}*/
+
+// Content item that can appear in a tool result
+message ContentItem {
+  oneof content {
+    TextContent text = 1;
+    ImageContent image = 2;
+    AudioContent audio = 3;
+    ResourceLinkContent resource_link = 4;
+    EmbeddedResourceContent embedded_resource = 5;
+  }
+}
+
+message Content {
+  repeated ContentItem content = 1;
+}
+
+message TextResourceContent {
+  string uri = 1 [json_name = "uri"];
+  string text = 2 [json_name = "text"];
+  string mime_type = 3 [json_name = "mimeType"];
+}
+
+message BlobResourceContent {
+  string uri = 1 [json_name = "uri"];
+  string blob = 2 [json_name = "blob"];
+  string mime_type = 3 [json_name = "mimeType"];
+}
+
+message ResourceContent {
+  string uri = 1 [json_name = "uri"];
+
+  oneof content {
+    string text = 2;
+    bytes blob = 3;
+  }
+
+  string mime_type = 4 [json_name = "mimeType"];
+}

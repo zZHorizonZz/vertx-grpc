@@ -3,10 +3,12 @@ package io.vertx.mcp.bridge.grpc.impl;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.mcp.proto.*;
 import io.vertx.json.schema.JsonSchema;
+import io.vertx.json.schema.common.dsl.SchemaBuilder;
+import io.vertx.json.schema.common.dsl.Schemas;
+import io.vertx.json.schema.common.dsl.ObjectSchemaBuilder;
+import io.vertx.json.schema.common.dsl.ArraySchemaBuilder;
 
 public class SchemaUtil {
 
@@ -24,98 +26,60 @@ public class SchemaUtil {
    * @return JsonSchema representing the JSON Schema
    */
   public static JsonSchema toJsonSchema(Descriptor descriptor) {
-    return JsonSchema.of(toJsonObjectSchema(descriptor));
+    ObjectSchemaBuilder object = toObjectSchemaBuilder(descriptor);
+    return JsonSchema.of(object.toJson());
   }
 
-  /**
-   * Builds the JSON notation of the schema for the given descriptor.
-   */
-  public static JsonObject toJsonObjectSchema(Descriptor descriptor) {
-    JsonObject schema = new JsonObject();
-
-    // Set schema version
-    schema.put("$schema", "http://json-schema.org/draft-07/schema#");
-    schema.put("type", "object");
-    schema.put("additionalProperties", false);
-
-    // Create properties object
-    JsonObject properties = new JsonObject();
-
-    // Process each field in the descriptor
+  private static ObjectSchemaBuilder toObjectSchemaBuilder(Descriptor descriptor) {
+    ObjectSchemaBuilder object = Schemas.objectSchema();
     for (FieldDescriptor field : descriptor.getFields()) {
-      JsonObject fieldSchema = createFieldSchema(field);
-      properties.put(field.getJsonName(), fieldSchema);
-    }
-
-    schema.put("properties", properties);
-
-    // Add required fields (all non-optional fields in proto3, or required fields in proto2)
-    JsonArray required = new JsonArray();
-    for (FieldDescriptor field : descriptor.getFields()) {
+      SchemaBuilder fieldSchema = createFieldSchema(field);
       if (isRequired(field)) {
-        required.add(field.getJsonName());
+        object.requiredProperty(field.getJsonName(), fieldSchema);
+      } else {
+        object.property(field.getJsonName(), fieldSchema);
       }
     }
-
-    if (!required.isEmpty()) {
-      schema.put("required", required);
-    }
-
-    return schema;
+    return object;
   }
 
   /**
-   * Creates a JSON Schema for a single field
+   * Creates a JSON Schema for a single field using the Vert.x JSON Schema DSL
    */
-  private static JsonObject createFieldSchema(FieldDescriptor field) {
-    JsonObject fieldSchema = new JsonObject();
+  private static SchemaBuilder createFieldSchema(FieldDescriptor field) {
+    SchemaBuilder base;
 
-    /*if (field.getOptions().hasExtension(com.google.protobuf.DescriptorProtos.FieldOptions.D)) {
-      fieldSchema.put("description", field.getFullName() + " (deprecated)");
-    } else {
-      fieldSchema.put("description", "Field: " + field.getName());
-    }*/
+    // Description (applies to all types)
+    String description = "Field: " + field.getName();
 
-    fieldSchema.put("description", "Field: " + field.getName());
-
-    // Handle repeated fields
+    // Handle repeated fields (arrays)
     if (field.isRepeated()) {
-      fieldSchema.put("type", "array");
-      JsonObject itemSchema = getTypeSchema(field);
-      fieldSchema.put("items", itemSchema);
-      return fieldSchema;
+      SchemaBuilder itemSchema = getTypeSchema(field);
+      ArraySchemaBuilder array = Schemas.arraySchema().items(itemSchema);
+      return array;
     }
 
-    // Handle maps
+    // Handle maps: protobuf map<K,V> is represented as a message with key/value fields; we only model additionalProperties as value type
     if (field.isMapField()) {
-      fieldSchema.put("type", "object");
-      fieldSchema.put("additionalProperties", getTypeSchema(field.getMessageType().findFieldByNumber(2)));
-      return fieldSchema;
+      FieldDescriptor valueField = field.getMessageType().findFieldByNumber(2); // 1=key, 2=value
+      SchemaBuilder valueSchema = getTypeSchema(valueField);
+      ObjectSchemaBuilder mapObj = Schemas.objectSchema().additionalProperties(valueSchema);
+      return mapObj;
     }
 
-    // Handle regular fields
-    JsonObject typeSchema = getTypeSchema(field);
-    fieldSchema.mergeIn(typeSchema);
-
-    // Add default value if present
-    if (field.hasDefaultValue()) {
-      fieldSchema.put("default", convertDefaultValue(field));
-    }
-
-    return fieldSchema;
+    // Regular fields
+    base = getTypeSchema(field);
+    return base;
   }
 
   /**
    * Gets the JSON Schema type for a field based on its Protobuf type
    */
-  private static JsonObject getTypeSchema(FieldDescriptor field) {
-    JsonObject schema = new JsonObject();
-
+  private static SchemaBuilder getTypeSchema(FieldDescriptor field) {
     switch (field.getType()) {
       case DOUBLE:
       case FLOAT:
-        schema.put("type", "number");
-        break;
+        return Schemas.numberSchema();
 
       case UINT64:
       case INT32:
@@ -123,44 +87,33 @@ public class SchemaUtil {
       case UINT32:
       case SFIXED32:
       case SINT32:
-        schema.put("type", "integer");
-        break;
+        return Schemas.intSchema();
 
       case BOOL:
-        schema.put("type", "boolean");
-        break;
+        return Schemas.booleanSchema();
 
       case INT64:
       case FIXED64:
       case SFIXED64:
       case SINT64:
       case STRING:
-        schema.put("type", "string");
-        break;
+        return Schemas.stringSchema();
 
       case BYTES:
-        schema.put("type", "string");
-        schema.put("format", "byte");
-        break;
+        // Represent bytes as string
+        return Schemas.stringSchema();
 
       case ENUM:
-        schema.put("type", "string");
-        JsonArray enumValues = new JsonArray();
-        field.getEnumType().getValues().forEach(value ->
-          enumValues.add(value.getName())
-        );
-        schema.put("enum", enumValues);
-        break;
+        // Represent enum as unconstrained string for compatibility
+        return Schemas.stringSchema();
 
       case MESSAGE:
-        // For nested messages, recursively convert to JSON notation
-        return toJsonObjectSchema(field.getMessageType());
+        // For nested messages, recursively convert
+        return toObjectSchemaBuilder(field.getMessageType());
 
       default:
-        schema.put("type", "string");
+        return Schemas.stringSchema();
     }
-
-    return schema;
   }
 
   /**

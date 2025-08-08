@@ -32,18 +32,18 @@ import java.util.List;
 
 public class ModelContextProtocolBridgeImpl implements ModelContextProtocolBridge {
 
-  private static final ServiceName SERVICE_NAME = ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService");
-  private static final Descriptors.ServiceDescriptor SERVICE_DESCRIPTOR = ModelContextProtocolProto.getDescriptor().findServiceByName("ModelContextProtocolService");
+  private static final ServiceName SERVICE_NAME = ServiceName.create("io.modelcontextprotocol.ModelContextProtocolServer");
+  private static final Descriptors.ServiceDescriptor SERVICE_DESCRIPTOR = ModelContextProtocolProto.getDescriptor().findServiceByName("ModelContextProtocolServer");
 
   public static final Descriptors.Descriptor TEXT_RESOURCE_DESCRIPTOR = TextResourceContent.getDescriptor();
   public static final Descriptors.Descriptor BLOB_RESOURCE_DESCRIPTOR = BlobResourceContent.getDescriptor();
 
   private final Vertx vertx;
-  private final ModelContextProtocolService service;
+  private final ModelContextProtocolServer service;
 
   private GrpcServer grpcServer;
 
-  public ModelContextProtocolBridgeImpl(Vertx vertx, ModelContextProtocolService service) {
+  public ModelContextProtocolBridgeImpl(Vertx vertx, ModelContextProtocolServer service) {
     this.vertx = vertx;
     this.service = service;
   }
@@ -302,7 +302,7 @@ public class ModelContextProtocolBridgeImpl implements ModelContextProtocolBridg
     }
 
     @Override
-    public ModelContextProtocolService service() {
+    public ModelContextProtocolServer service() {
       return service;
     }
 

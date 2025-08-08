@@ -1,0 +1,255 @@
+syntax = "proto3";
+
+import "service/v1/types.proto";
+import "google/protobuf/struct.proto";
+
+option java_multiple_files = true;
+option java_package = "io.vertx.jrpc.mcp.proto";
+option java_outer_classname = "ModelContextProtocolProto";
+
+package mcp;
+
+// The ModelContextProtocolService provides methods for working with mcp
+service ModelContextProtocolService {
+  // Initialization & Lifecycle
+  rpc Initialize(InitializeRequest) returns (InitializeResponse);
+
+  rpc Ping(PingRequest) returns (PingResponse);
+
+  rpc Cancel(CancelRequest) returns (CancelResponse);
+
+  // Tools
+  rpc ToolsList(ToolsListRequest) returns (ToolsListResponse);
+
+  rpc ToolsCall(ToolsCallRequest) returns (ToolsCallResponse);
+
+  // Resources
+  rpc ResourcesList(ResourcesListRequest) returns (ResourcesListResponse);
+
+  rpc ResourcesTemplatesList(ResourcesTemplatesListRequest) returns (ResourcesTemplatesListResponse);
+
+  rpc ResourcesRead(ResourcesReadRequest) returns (ResourcesReadResponse);
+
+  rpc ResourcesSubscribe(ResourcesSubscribeRequest) returns (ResourcesSubscribeResponse);
+
+  rpc ResourcesUnsubscribe(ResourcesUnsubscribeRequest) returns (ResourcesUnsubscribeResponse);
+
+  // Prompts
+  rpc PromptsList(PromptsListRequest) returns (PromptsListResponse);
+
+  rpc PromptsGet(PromptsGetRequest) returns (PromptsGetResponse);
+}
+
+message Annotation {
+  Role audience = 1 [json_name = "audience"];
+
+  enum Role {
+    USER = 0;
+    ASSISTANT = 1;
+  }
+
+  string last_modified = 2 [json_name = "lastModified"];
+
+  int32 priority = 3 [json_name = "priority"];
+}
+
+message Tool {
+  string name = 1 [json_name = "name"];
+  string title = 2 [json_name = "title"];
+  string description = 3 [json_name = "description"];
+
+  google.protobuf.Struct input_schema = 4 [json_name = "inputSchema"];
+  google.protobuf.Struct output_schema = 5 [json_name = "outputSchema"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message Resource {
+  string uri = 1 [json_name = "uri"];
+  string name = 2 [json_name = "name"];
+  string title = 3 [json_name = "title"];
+  string description = 4 [json_name = "description"];
+
+  string mime_type = 5 [json_name = "mimeType"];
+  int32 size = 6 [json_name = "size"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message ResourceTemplate {
+  string uri_template = 1 [json_name = "uriTemplate"];
+  string name = 2 [json_name = "name"];
+  string title = 3 [json_name = "title"];
+  string description = 4 [json_name = "description"];
+
+  string mime_type = 5 [json_name = "mimeType"];
+  int32 size = 6 [json_name = "size"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message Prompt {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message InitializeRequest {
+  string protocol_version = 1  [json_name = "protocolVersion"];
+
+  google.protobuf.Struct capabilities = 2 [json_name = "capabilities"];
+
+  message ClientInfo {
+    string name = 1  [json_name = "name"];
+    string version = 2  [json_name = "version"];
+  }
+
+  ClientInfo client_info = 3  [json_name = "clientInfo"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message InitializeResponse {
+  string protocol_version = 1  [json_name = "protocolVersion"];
+
+  google.protobuf.Struct capabilities = 2 [json_name = "capabilities"];
+
+  message ServerInfo {
+    string name = 1  [json_name = "name"];
+    string version = 2  [json_name = "version"];
+  }
+
+  ServerInfo server_info = 3  [json_name = "serverInfo"];
+
+  string instructions = 4 [json_name = "instructions"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message InitializedNotification {
+  bool success = 1;
+}
+
+message PingRequest {
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message PingResponse {
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message CancelRequest {
+  string request_id = 1;
+}
+
+message CancelResponse {
+  bool success = 1;
+}
+
+// Message definitions for tools
+message ToolsListRequest {
+  string cursor = 1 [json_name = "cursor"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message ToolsListResponse {
+  repeated Tool tools = 1 [json_name = "tools"];
+
+  string next_cursor = 2 [json_name = "nextCursor"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message ToolsCallRequest {
+  string name = 1 [json_name = "name"];
+
+  google.protobuf.Struct arguments = 2 [json_name = "arguments"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message ToolsCallResponse {
+  repeated google.protobuf.Struct content = 1 [json_name = "content"];
+  google.protobuf.Struct structured_content = 2 [json_name = "structuredContent"];
+
+  bool is_error = 3 [json_name = "isError"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+// Message definitions for resources
+message ResourcesListRequest {
+  string cursor = 1 [json_name = "cursor"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message ResourcesListResponse {
+  repeated Resource resources = 1 [json_name = "resources"];
+
+  string next_cursor = 2 [json_name = "nextCursor"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message ResourcesTemplatesListRequest {
+  string cursor = 1 [json_name = "cursor"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message ResourcesTemplatesListResponse {
+  repeated ResourceTemplate resource_templates = 1 [json_name = "resourceTemplates"];
+
+  string next_cursor = 2 [json_name = "nextCursor"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message ResourcesReadRequest {
+  string uri = 1 [json_name = "uri"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message ResourcesReadResponse {
+  repeated io.modelcontextprotocol.v1.ResourceContent contents = 1 [json_name = "contents"];
+
+  google.protobuf.Struct meta = 99 [json_name = "_meta"];
+}
+
+message ResourcesSubscribeRequest {
+  string resource_id = 1;
+}
+
+message ResourcesSubscribeResponse {
+  bool success = 1;
+  string subscription_id = 2;
+}
+
+message ResourcesUnsubscribeRequest {
+  string subscription_id = 1;
+}
+
+message ResourcesUnsubscribeResponse {
+  bool success = 1;
+}
+
+// Message definitions for prompts
+message PromptsListRequest {
+  string cursor = 1 [json_name = "cursor"];
+}
+
+message PromptsListResponse {
+  repeated Prompt prompts = 1;
+}
+
+message PromptsGetRequest {
+  string prompt_id = 1;
+}
+
+message PromptsGetResponse {
+  string content = 1;
+  map<string, string> metadata = 2;
+}

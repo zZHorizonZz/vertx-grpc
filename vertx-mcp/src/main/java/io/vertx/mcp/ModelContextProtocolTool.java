@@ -19,5 +19,5 @@ public interface ModelContextProtocolTool extends Function<JsonObject, Future<Co
 
   JsonSchema outputSchema();
 
-  ModelContextProtocolService service();
+  ModelContextProtocolServer service();
 }

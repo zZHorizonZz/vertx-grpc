@@ -201,6 +201,7 @@
     <module>vertx-grpc-transcoding</module>
     <module>vertx-mcp-json-rpc</module>
     <module>vertx-mcp</module>
+    <module>vertx-mcp-server</module>
     <module>vertx-mcp-bridge-grpc</module>
     <module>vertx-mcp-sample</module>
     <module>vertx-grpc-server</module>

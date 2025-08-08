@@ -10,7 +10,7 @@ import io.vertx.jrpc.mcp.proto.ResourcesListRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesListResponse;
 import io.vertx.mcp.ModelContextProtocolResource;
 import io.vertx.mcp.ModelContextProtocolResourceProvider;
-import io.vertx.mcp.ModelContextProtocolService;
+import io.vertx.mcp.ModelContextProtocolServer;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class ResourcesListHandler extends BaseHandler<ResourcesListRequest, ResourcesListResponse> {
 
   public static final ServiceMethod<ResourcesListRequest, ResourcesListResponse> SERVICE_METHOD = ServiceMethod.server(
-    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolService"),
+    ServiceName.create("io.modelcontextprotocol.ModelContextProtocolServer"),
     "ResourcesList",
     GrpcMessageEncoder.encoder(),
     GrpcMessageDecoder.decoder(ResourcesListRequest.newBuilder()));
@@ -32,7 +32,7 @@ public class ResourcesListHandler extends BaseHandler<ResourcesListRequest, Reso
    * @param server the gRPC server
    * @param service the MCP service implementation
    */
-  public ResourcesListHandler(GrpcServer server, ModelContextProtocolService service) {
+  public ResourcesListHandler(GrpcServer server, ModelContextProtocolServer service) {
     super(server, service);
   }
 

@@ -9,9 +9,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Implementation of the ModelContextProtocolService.
+ * Implementation of the ModelContextProtocolServer.
  */
-public class ModelContextProtocolServiceImpl implements ModelContextProtocolService {
+public class ModelContextProtocolServerImpl implements ModelContextProtocolServer {
 
   private final ModelContextProtocolOptions options;
 
@@ -22,7 +22,7 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
   private final List<ModelContextProtocolResourceProvider> resourceProviders = new ArrayList<>();
   private final List<ModelContextProtocolPromptProvider> promptProviders = new ArrayList<>();
 
-  public ModelContextProtocolServiceImpl(ModelContextProtocolOptions options) {
+  public ModelContextProtocolServerImpl(ModelContextProtocolOptions options) {
     this.options = options;
   }
 
