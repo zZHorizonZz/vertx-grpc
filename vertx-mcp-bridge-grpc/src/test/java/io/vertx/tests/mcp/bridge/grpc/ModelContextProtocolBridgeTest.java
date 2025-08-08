@@ -18,7 +18,6 @@ import io.vertx.grpc.server.Service;
 import io.vertx.mcp.ModelContextProtocolOptions;
 import io.vertx.mcp.ModelContextProtocolService;
 import io.vertx.mcp.bridge.grpc.ModelContextProtocolBridge;
-import io.vertx.mcp.bridge.grpc.ModelContextProtocolHandler;
 import io.vertx.mcp.jrpc.model.JsonRpcRequest;
 import io.vertx.mcp.jrpc.model.JsonRpcResponse;
 import io.vertx.tests.server.grpc.web.*;
@@ -64,11 +63,13 @@ public class ModelContextProtocolBridgeTest {
     grpcServer.addService(testService);
 
     // Create and configure bridge
-    ModelContextProtocolBridge.create(vertx, mcpService).bind(grpcServer);
+    ModelContextProtocolBridge bridge = ModelContextProtocolBridge.create(vertx, mcpService);
+
+    // Bind the bridge to the gRPC server
+    bridge.bind(grpcServer);
 
     // Create HTTP server with JSON-RPC handler
-    httpServer = vertx.createHttpServer(new HttpServerOptions().setPort(port))
-      .requestHandler(new ModelContextProtocolHandler(grpcServer));
+    httpServer = vertx.createHttpServer(new HttpServerOptions().setPort(port)).requestHandler(bridge);
 
     // Start server
     httpServer.listen().onComplete(ctx.asyncAssertSuccess());

@@ -36,7 +36,7 @@ public interface ModelContextProtocolService {
 
   List<ModelContextProtocolPromptProvider> promptsList();
 
-  Future<ModelContextProtocolDataType> executeTool(String tool, JsonObject parameters);
+  Future<ContentDataType> executeTool(String tool, JsonObject parameters);
 
   Future<JsonObject> executeResource(String resource, JsonObject parameters);
 

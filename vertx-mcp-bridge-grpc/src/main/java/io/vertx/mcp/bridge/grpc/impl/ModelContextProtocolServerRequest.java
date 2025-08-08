@@ -28,7 +28,7 @@ class ModelContextProtocolServerRequest extends HttpServerRequestInternal implem
   private final MultiMap params = MultiMap.caseInsensitiveMultiMap();
   private final Set<Cookie> cookies = new HashSet<>();
   private final HttpServerResponse response;
-  private final HttpConnection connection = new ModelContextProtocolConnection();
+  private final HttpConnection connection = new ProxyHttpConnection();
   private final Context context;
   private Handler<Buffer> dataHandler;
   private Handler<Void> endHandler;

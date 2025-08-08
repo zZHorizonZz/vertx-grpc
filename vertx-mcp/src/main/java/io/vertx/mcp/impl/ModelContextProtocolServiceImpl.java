@@ -94,7 +94,7 @@ public class ModelContextProtocolServiceImpl implements ModelContextProtocolServ
   }
 
   @Override
-  public Future<ModelContextProtocolDataType> executeTool(String tool, JsonObject parameters) {
+  public Future<ContentDataType> executeTool(String tool, JsonObject parameters) {
     Optional<ModelContextProtocolTool> toolExists = tools.stream().filter(t -> t.id().equals(tool)).findFirst();
 
     if (toolExists.isEmpty()) {

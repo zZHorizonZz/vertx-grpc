@@ -8,14 +8,14 @@ import io.vertx.core.internal.http.HttpServerRequestWrapper;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.mcp.jrpc.model.JsonRpcRequest;
 
-public class ModelContextProtocolProxyRequest extends HttpServerRequestWrapper {
+public class ProxyHttpServerRequestRequest extends HttpServerRequestWrapper {
 
   private String methodName;
   private ServiceName serviceName;
 
   private final JsonRpcRequest jsonRpcRequest;
 
-  public ModelContextProtocolProxyRequest(HttpServerRequestInternal delegate, String methodName, ServiceName serviceName, JsonRpcRequest jsonRpcRequest) {
+  public ProxyHttpServerRequestRequest(HttpServerRequestInternal delegate, String methodName, ServiceName serviceName, JsonRpcRequest jsonRpcRequest) {
     super(delegate);
     this.methodName = methodName;
     this.serviceName = serviceName;

@@ -6,7 +6,7 @@ import io.vertx.json.schema.JsonSchema;
 
 import java.util.function.Function;
 
-public interface ModelContextProtocolTool extends Function<JsonObject, Future<ModelContextProtocolDataType>> {
+public interface ModelContextProtocolTool extends Function<JsonObject, Future<ContentDataType>> {
   String id();
 
   String name();

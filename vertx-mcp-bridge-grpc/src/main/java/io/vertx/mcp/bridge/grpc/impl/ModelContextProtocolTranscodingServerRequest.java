@@ -26,14 +26,14 @@ import io.vertx.mcp.jrpc.model.JsonRpcRequest;
 
 import java.util.List;
 
-public class ModelContextProtocolTranscodingServerRequest<Req, Resp> extends TranscodingGrpcServerRequest<Req, Resp> {
+class ModelContextProtocolTranscodingServerRequest<Req, Resp> extends TranscodingGrpcServerRequest<Req, Resp> {
 
   private final String methodName;
   private final JsonRpcRequest jsonRpcRequest;
   private final HttpServerRequest httpRequest;
   private final GrpcMessageDecoder<Req> messageDecoder;
 
-  public ModelContextProtocolTranscodingServerRequest(ContextInternal context, HttpServerRequest httpRequest, JsonRpcRequest jsonRpcRequest, GrpcMessageDecoder<Req> messageDecoder,
+  ModelContextProtocolTranscodingServerRequest(ContextInternal context, HttpServerRequest httpRequest, JsonRpcRequest jsonRpcRequest, GrpcMessageDecoder<Req> messageDecoder,
     GrpcMethodCall methodCall) {
     super(context, httpRequest, "", List.of(), messageDecoder, methodCall);
 
@@ -45,9 +45,9 @@ public class ModelContextProtocolTranscodingServerRequest<Req, Resp> extends Tra
 
   @Override
   public GrpcServerRequestImpl<Req, Resp> handler(Handler<Req> handler) {
-    if (httpRequest instanceof ModelContextProtocolProxyRequest) {
+    if (httpRequest instanceof ProxyHttpServerRequestRequest) {
       try {
-        Req req = messageDecoder.decode(GrpcMessage.message("identity", WireFormat.JSON, ((ModelContextProtocolProxyRequest) httpRequest).getTransformedBody()));
+        Req req = messageDecoder.decode(GrpcMessage.message("identity", WireFormat.JSON, ((ProxyHttpServerRequestRequest) httpRequest).getTransformedBody()));
         handler.handle(req);
       } catch (Exception e) {
         super.tryFail(e);
@@ -86,6 +86,6 @@ public class ModelContextProtocolTranscodingServerRequest<Req, Resp> extends Tra
   }
 
   public JsonRpcRequest getJsonRpcRequest() {
-    return httpRequest instanceof ModelContextProtocolProxyRequest ? ((ModelContextProtocolProxyRequest) httpRequest).getJsonRpcRequest() : jsonRpcRequest;
+    return httpRequest instanceof ProxyHttpServerRequestRequest ? ((ProxyHttpServerRequestRequest) httpRequest).getJsonRpcRequest() : jsonRpcRequest;
   }
 }

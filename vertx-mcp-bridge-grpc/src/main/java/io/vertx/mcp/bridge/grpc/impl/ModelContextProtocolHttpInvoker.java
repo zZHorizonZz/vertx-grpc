@@ -25,7 +25,7 @@ public class ModelContextProtocolHttpInvoker implements GrpcHttpInvoker {
 
   @Override
   public <Req, Resp> GrpcInvocation<Req, Resp> accept(HttpServerRequest request, ServiceMethod<Req, Resp> serviceMethod) {
-    if (!(request instanceof ModelContextProtocolProxyRequest)) {
+    if (!(request instanceof ProxyHttpServerRequestRequest)) {
       return null;
     }
 
@@ -47,7 +47,7 @@ public class ModelContextProtocolHttpInvoker implements GrpcHttpInvoker {
       GrpcServerRequestImpl<Req, Resp> grpcRequest = new ModelContextProtocolTranscodingServerRequest<>(
         context,
         request,
-        ((ModelContextProtocolProxyRequest) request).getJsonRpcRequest(),
+        ((ProxyHttpServerRequestRequest) request).getJsonRpcRequest(),
         serviceMethod.decoder(),
         methodCall
       );

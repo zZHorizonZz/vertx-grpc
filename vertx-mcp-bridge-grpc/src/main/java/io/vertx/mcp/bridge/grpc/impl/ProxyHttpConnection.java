@@ -14,7 +14,7 @@ import java.security.cert.Certificate;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-class ModelContextProtocolConnection implements HttpConnection {
+class ProxyHttpConnection implements HttpConnection {
   @Override
   public HttpConnection goAway(long errorCode, int lastStreamId, Buffer debugData) {
     return this;

@@ -7,13 +7,13 @@ import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public interface ModelContextProtocolDataType {
+public interface ContentDataType {
   String type();
 
   JsonObject toJson();
 
-  interface StructuredJsonContentDataType extends ModelContextProtocolDataType {
-    static ModelContextProtocolDataType.StructuredJsonContentDataType create(JsonObject json) {
+  interface StructuredJsonContentDataType extends ContentDataType {
+    static ContentDataType.StructuredJsonContentDataType create(JsonObject json) {
       return () -> json;
     }
 
@@ -30,12 +30,12 @@ public interface ModelContextProtocolDataType {
     JsonObject json();
   }
 
-  interface UnstructuredContentDataType extends ModelContextProtocolDataType {
-    static ModelContextProtocolDataType.UnstructuredContentDataType create(List<ModelContextProtocolDataType> content) {
+  interface UnstructuredContentDataType extends ContentDataType {
+    static ContentDataType.UnstructuredContentDataType create(List<ContentDataType> content) {
       return () -> content;
     }
 
-    static ModelContextProtocolDataType.UnstructuredContentDataType create(JsonObject json) {
+    static ContentDataType.UnstructuredContentDataType create(JsonObject json) {
       return () -> {
         JsonArray contentJson = json.getJsonArray("content");
         if (contentJson == null) {
@@ -54,14 +54,14 @@ public interface ModelContextProtocolDataType {
           }
           switch (type) {
             case "text":
-              return ModelContextProtocolDataType.TextContentDataType.create(contentJsonObject);
+              return ContentDataType.TextContentDataType.create(contentJsonObject);
             case "image":
-              return ModelContextProtocolDataType.ImageContentDataType.create(contentJsonObject);
+              return ContentDataType.ImageContentDataType.create(contentJsonObject);
             case "audio":
-              return ModelContextProtocolDataType.AudioContentDataType.create(contentJsonObject);
+              return ContentDataType.AudioContentDataType.create(contentJsonObject);
             case "resourceLink":
             case "resource_link":
-              return ModelContextProtocolDataType.ResourceLinkContentDataType.create(contentJsonObject);
+              return ContentDataType.ResourceLinkContentDataType.create(contentJsonObject);
             default:
               throw new IllegalArgumentException("Content type not supported: " + type);
           }
@@ -84,21 +84,21 @@ public interface ModelContextProtocolDataType {
 
     default JsonArray toJsonArray() {
       JsonArray contentJson = new JsonArray();
-      for (ModelContextProtocolDataType content : content()) {
+      for (ContentDataType content : content()) {
         contentJson.add(content.toJson());
       }
       return contentJson;
     }
 
-    List<ModelContextProtocolDataType> content();
+    List<ContentDataType> content();
   }
 
-  interface TextContentDataType extends ModelContextProtocolDataType {
-    static ModelContextProtocolDataType.TextContentDataType create(String text) {
+  interface TextContentDataType extends ContentDataType {
+    static ContentDataType.TextContentDataType create(String text) {
       return () -> text;
     }
 
-    static ModelContextProtocolDataType.TextContentDataType create(JsonObject json) {
+    static ContentDataType.TextContentDataType create(JsonObject json) {
       return create(json.getString("text"));
     }
 
@@ -115,9 +115,9 @@ public interface ModelContextProtocolDataType {
     String text();
   }
 
-  interface ImageContentDataType extends ModelContextProtocolDataType {
-    static ModelContextProtocolDataType.ImageContentDataType create(String data, String mimeType) {
-      return new ModelContextProtocolDataType.ImageContentDataType() {
+  interface ImageContentDataType extends ContentDataType {
+    static ContentDataType.ImageContentDataType create(String data, String mimeType) {
+      return new ContentDataType.ImageContentDataType() {
         @Override
         public String data() {
           return data;
@@ -130,7 +130,7 @@ public interface ModelContextProtocolDataType {
       };
     }
 
-    static ModelContextProtocolDataType.ImageContentDataType create(JsonObject json) {
+    static ContentDataType.ImageContentDataType create(JsonObject json) {
       return create(json.getString("data"), json.getString("mimeType"));
     }
 
@@ -152,9 +152,9 @@ public interface ModelContextProtocolDataType {
     String mimeType();
   }
 
-  interface AudioContentDataType extends ModelContextProtocolDataType {
-    static ModelContextProtocolDataType.AudioContentDataType create(String data, String mimeType) {
-      return new ModelContextProtocolDataType.AudioContentDataType() {
+  interface AudioContentDataType extends ContentDataType {
+    static ContentDataType.AudioContentDataType create(String data, String mimeType) {
+      return new ContentDataType.AudioContentDataType() {
         @Override
         public String data() {
           return data;
@@ -167,7 +167,7 @@ public interface ModelContextProtocolDataType {
       };
     }
 
-    static ModelContextProtocolDataType.AudioContentDataType create(JsonObject json) {
+    static ContentDataType.AudioContentDataType create(JsonObject json) {
       return create(json.getString("data"), json.getString("mimeType"));
     }
 
@@ -189,9 +189,9 @@ public interface ModelContextProtocolDataType {
     String mimeType();
   }
 
-  interface ResourceLinkContentDataType extends ModelContextProtocolDataType {
-    static ModelContextProtocolDataType.ResourceLinkContentDataType create(URI uri, String name, String description, String mimeType) {
-      return new ModelContextProtocolDataType.ResourceLinkContentDataType() {
+  interface ResourceLinkContentDataType extends ContentDataType {
+    static ContentDataType.ResourceLinkContentDataType create(URI uri, String name, String description, String mimeType) {
+      return new ContentDataType.ResourceLinkContentDataType() {
         @Override
         public URI uri() {
           return uri;
@@ -214,7 +214,7 @@ public interface ModelContextProtocolDataType {
       };
     }
 
-    static ModelContextProtocolDataType.ResourceLinkContentDataType create(JsonObject json) {
+    static ContentDataType.ResourceLinkContentDataType create(JsonObject json) {
       return create(
         URI.create(json.getString("uri")),
         json.getString("name"),
@@ -248,7 +248,7 @@ public interface ModelContextProtocolDataType {
   }
 
   // TODO: Make this work with Resources
-  interface EmbeddedResourceContentDataType extends ModelContextProtocolDataType {
+  interface EmbeddedResourceContentDataType extends ContentDataType {
     default String type() {
       return "resource";
     }

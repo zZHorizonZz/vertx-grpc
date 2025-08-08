@@ -35,7 +35,7 @@ import java.util.Date;
  * @param <Req> the request type
  * @param <Resp> the response type
  */
-public class ModelContextProtocolTranscodingServerResponse<Req, Resp> extends GrpcServerResponseImpl<Req, Resp> {
+class ModelContextProtocolTranscodingServerResponse<Req, Resp> extends GrpcServerResponseImpl<Req, Resp> {
 
   private final ModelContextProtocolTranscodingServerRequest<Req, Resp> request;
   private final HttpServerResponse httpResponse;
@@ -48,7 +48,7 @@ public class ModelContextProtocolTranscodingServerResponse<Req, Resp> extends Gr
    * @param httpResponse the HTTP server response
    * @param encoder the message encoder
    */
-  public ModelContextProtocolTranscodingServerResponse(ContextInternal context,
+  ModelContextProtocolTranscodingServerResponse(ContextInternal context,
     GrpcServerRequestImpl<Req, Resp> request,
     HttpServerResponse httpResponse,
     GrpcMessageEncoder<Resp> encoder) {
