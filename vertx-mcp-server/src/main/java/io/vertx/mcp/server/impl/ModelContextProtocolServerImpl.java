@@ -10,6 +10,7 @@ import io.vertx.mcp.server.ModelContextProtocolServer;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of the ModelContextProtocolServer.
@@ -77,23 +78,35 @@ public class ModelContextProtocolServerImpl implements ModelContextProtocolServe
   }
 
   @Override
-  public List<ModelContextProtocolTool> toolsList() {
+  public List<ModelContextProtocolTool> tools() {
     return Collections.unmodifiableList(tools);
   }
 
   @Override
-  public List<ModelContextProtocolResourceTemplate> resourcesTemplatesList() {
-    return Collections.unmodifiableList(resourcesTemplates);
-  }
-
-  @Override
-  public List<ModelContextProtocolResourceProvider> resourcesList() {
+  public List<ModelContextProtocolResourceProvider> resourceProviders() {
     return Collections.unmodifiableList(resourceProviders);
   }
 
   @Override
-  public List<ModelContextProtocolPromptProvider> promptsList() {
+  public List<ModelContextProtocolPromptProvider> promptProviders() {
     return Collections.unmodifiableList(promptProviders);
+  }
+
+  @Override
+  public Future<List<ModelContextProtocolResourceTemplate>> resourcesTemplates(String cursor) {
+    if (!cursor.isEmpty()) {
+      return Future.succeededFuture(resourcesTemplates.stream()
+        .filter(t -> t.name().contains(cursor) || t.description().contains(cursor) || t.title().contains(cursor))
+        .collect(Collectors.toList())
+      );
+    }
+
+    return Future.succeededFuture(Collections.unmodifiableList(resourcesTemplates));
+  }
+
+  @Override
+  public Future<List<ModelContextProtocolResource>> resources(String cursor) {
+    return null;
   }
 
   @Override

@@ -33,7 +33,7 @@ public class PromptsListHandler extends BaseHandler<PromptsListRequest, PromptsL
     request.handler(req -> {
       try {
         PromptsListResponse response = PromptsListResponse.newBuilder()
-          //.addAllPrompts(service.promptsList().stream().map(ModelContextProtocolPromptProvider::prompt).collect(Collectors.toUnmodifiableSet()))
+          //.addAllPrompts(service.promptProviders().stream().map(ModelContextProtocolPromptProvider::prompt).collect(Collectors.toUnmodifiableSet()))
           .build();
         request.response().end(response);
       } catch (Exception e) {

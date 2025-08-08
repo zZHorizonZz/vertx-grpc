@@ -58,7 +58,7 @@ public class ToolsListHandler extends BaseHandler<ToolsListRequest, ToolsListRes
    */
   public Future<ToolsListResponse> toolsList(ToolsListRequest request) {
     return Future.succeededFuture(ToolsListResponse.newBuilder()
-      .addAllTools(service.toolsList().stream().map(ToolsListHandler::buildTool).collect(Collectors.toUnmodifiableSet()))
+      .addAllTools(service.tools().stream().map(ToolsListHandler::buildTool).collect(Collectors.toUnmodifiableSet()))
       .build());
   }
 

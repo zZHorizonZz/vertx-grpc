@@ -33,7 +33,7 @@ public class PromptsGetHandler extends BaseHandler<PromptsGetRequest, PromptsGet
     request.handler(req -> {
       try {
         String promptId = req.getPromptId();
-        boolean exists = service.promptsList().stream().anyMatch(p -> p.id().equals(promptId));
+        boolean exists = service.promptProviders().stream().anyMatch(p -> p.id().equals(promptId));
         if (!exists) {
           request.response().status(GrpcStatus.INTERNAL).end();
           return;

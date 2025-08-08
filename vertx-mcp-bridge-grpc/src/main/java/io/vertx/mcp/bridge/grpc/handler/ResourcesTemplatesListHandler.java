@@ -6,10 +6,8 @@ import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.jrpc.mcp.proto.ResourceTemplate;
 import io.vertx.jrpc.mcp.proto.ResourcesTemplatesListRequest;
 import io.vertx.jrpc.mcp.proto.ResourcesTemplatesListResponse;
-import io.vertx.mcp.ModelContextProtocolResourceTemplate;
 import io.vertx.mcp.server.ModelContextProtocolServer;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -37,24 +35,18 @@ public class ResourcesTemplatesListHandler extends BaseHandler<ResourcesTemplate
   public void handle(GrpcServerRequest<ResourcesTemplatesListRequest, ResourcesTemplatesListResponse> request) {
     request.handler(req -> {
       try {
-        String filter = req.getCursor();
-        List<ModelContextProtocolResourceTemplate> templates = service.resourcesTemplatesList();
-        if (!filter.isEmpty()) {
-          templates = templates.stream()
-            .filter(t -> t.name().contains(filter) || t.description().contains(filter) || t.title().contains(filter))
-            .collect(Collectors.toList());
-        }
-
-        ResourcesTemplatesListResponse response = ResourcesTemplatesListResponse.newBuilder()
-          .addAllResourceTemplates(templates.stream().map(t -> ResourceTemplate.newBuilder()
+        service.resourcesTemplates(req.getCursor())
+          .map(list -> list.stream().map(t -> ResourceTemplate.newBuilder()
             .setUriTemplate(t.uriTemplate())
             .setName(t.name())
             .setTitle(t.title())
             .setDescription(t.description())
             .setMimeType(t.mimeType())
-            .build()).collect(Collectors.toList()))
-          .build();
-        request.response().end(response);
+            .build()).collect(Collectors.toList())
+          )
+          .map(list -> ResourcesTemplatesListResponse.newBuilder().addAllResourceTemplates(list).build())
+          .onSuccess(response -> request.response().end(response))
+          .onFailure(err -> request.response().status(GrpcStatus.INTERNAL).end());
       } catch (Exception e) {
         request.response().status(GrpcStatus.INTERNAL).end();
       }

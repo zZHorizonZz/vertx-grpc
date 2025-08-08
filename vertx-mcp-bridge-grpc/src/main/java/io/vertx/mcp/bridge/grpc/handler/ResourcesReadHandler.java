@@ -46,7 +46,7 @@ public class ResourcesReadHandler extends BaseHandler<ResourcesReadRequest, Reso
   public void handle(GrpcServerRequest<ResourcesReadRequest, ResourcesReadResponse> request) {
     request.handler(req -> {
       try {
-        service.resourcesList().forEach(p -> handleRequest(request, p, URI.create(req.getUri())));
+        service.resourceProviders().forEach(p -> handleRequest(request, p, URI.create(req.getUri())));
       } catch (Exception e) {
         request.response().status(GrpcStatus.INTERNAL).end();
       }

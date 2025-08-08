@@ -29,13 +29,15 @@ public interface ModelContextProtocolServer {
 
   void registerPromptProvider(ModelContextProtocolPromptProvider prompt);
 
-  List<ModelContextProtocolTool> toolsList();
+  List<ModelContextProtocolTool> tools();
 
-  List<ModelContextProtocolResourceTemplate> resourcesTemplatesList();
+  List<ModelContextProtocolPromptProvider> promptProviders();
 
-  List<ModelContextProtocolResourceProvider> resourcesList();
+  List<ModelContextProtocolResourceProvider> resourceProviders();
 
-  List<ModelContextProtocolPromptProvider> promptsList();
+  Future<List<ModelContextProtocolResourceTemplate>> resourcesTemplates(String cursor);
+
+  Future<List<ModelContextProtocolResource>> resources(String cursor);
 
   Future<ContentDataType> executeTool(String tool, JsonObject parameters);
 

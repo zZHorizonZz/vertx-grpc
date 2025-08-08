@@ -55,7 +55,7 @@ public class ResourcesListHandler extends BaseHandler<ResourcesListRequest, Reso
   }
 
   private Future<List<ModelContextProtocolResource>> resourcesList(String filter) {
-    List<ModelContextProtocolResourceProvider> providers = service.resourcesList();
+    List<ModelContextProtocolResourceProvider> providers = service.resourceProviders();
     return Future
       .all(providers.stream().map(provider -> provider
           .apply(null)
