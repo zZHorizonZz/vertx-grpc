@@ -28,6 +28,7 @@ public class MethodTranscodingOptions {
   private String path;
   private String body;
   private String responseBody;
+  private boolean responseStreaming;
   private List<MethodTranscodingOptions> additionalBindings = new LinkedList<>();
 
   public MethodTranscodingOptions() {
@@ -40,6 +41,7 @@ public class MethodTranscodingOptions {
     this.path = that.path;
     this.body = that.body;
     this.responseBody = that.responseBody;
+    this.responseStreaming = that.responseStreaming;
     this.additionalBindings = new ArrayList<>(that.additionalBindings);
   }
 
@@ -140,6 +142,26 @@ public class MethodTranscodingOptions {
    */
   public MethodTranscodingOptions setResponseBody(String responseBody) {
     this.responseBody = responseBody;
+    return this;
+  }
+
+  /**
+   * @return whether the gRPC method returns a stream of responses
+   */
+  public boolean isResponseStreaming() {
+    return responseStreaming;
+  }
+
+  /**
+   * Marks the gRPC method as server-streaming. Response framing on the wire depends on this: server-streaming
+   * methods are framed as Server-Sent Events ({@code text/event-stream}, {@code data: <json>\n\n} per message),
+   * unary methods are sent as a single JSON body with a {@code Content-Length}.
+   *
+   * @param responseStreaming {@code true} for server-streaming methods, {@code false} for unary
+   * @return this instance
+   */
+  public MethodTranscodingOptions setResponseStreaming(boolean responseStreaming) {
+    this.responseStreaming = responseStreaming;
     return this;
   }
 

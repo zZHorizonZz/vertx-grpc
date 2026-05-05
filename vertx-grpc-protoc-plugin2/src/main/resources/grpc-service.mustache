@@ -99,6 +99,7 @@ public class {{grpcServiceFqn}} extends {{serviceFqn}} implements Service {
     .setPath("{{{transcodingContext.path}}}")
     .setBody("{{{transcodingContext.body}}}")
     .setResponseBody("{{{transcodingContext.responseBody}}}")
+    .setResponseStreaming({{isManyOutput}})
     {{#transcodingContext.additionalBindings}}
     .addAdditionalBinding(new io.vertx.grpc.transcoding.MethodTranscodingOptions()
       .setSelector("{{selector}}")

@@ -81,6 +81,7 @@ public class GreeterGrpcService extends GreeterService implements Service {
     .setPath("/v1/hello/{name}")
     .setBody("")
     .setResponseBody("")
+    .setResponseStreaming(false)
   ;
 
   /**

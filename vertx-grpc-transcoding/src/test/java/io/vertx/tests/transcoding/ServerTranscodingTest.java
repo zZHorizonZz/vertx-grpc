@@ -59,6 +59,8 @@ public class ServerTranscodingTest extends GrpcTestBase {
   public static GrpcMessageDecoder<EchoRequestBody> ECHO_REQUEST_BODY_DECODER = GrpcMessageDecoder.decoder(EchoRequestBody.newBuilder());
   public static GrpcMessageEncoder<EchoResponse> ECHO_RESPONSE_ENCODER = GrpcMessageEncoder.encoder();
   public static GrpcMessageEncoder<EchoResponseBody> ECHO_RESPONSE_BODY_ENCODER = GrpcMessageEncoder.encoder();
+  public static GrpcMessageDecoder<StreamingRequest> STREAMING_REQUEST_DECODER = GrpcMessageDecoder.decoder(StreamingRequest.newBuilder());
+  public static GrpcMessageEncoder<StreamingResponse> STREAMING_RESPONSE_ENCODER = GrpcMessageEncoder.encoder();
 
   public static final ServiceName TEST_SERVICE_NAME = ServiceName.create(TestServiceGrpc.SERVICE_NAME);
 
@@ -86,6 +88,12 @@ public class ServerTranscodingTest extends GrpcTestBase {
 
   public static final TranscodingServiceMethod<EchoRequest, EchoResponse> UNARY_CALL_WITH_REPEATED_QUERY = TranscodingServiceMethod.server(TEST_SERVICE_NAME, "UnaryCallWithRepeatedQuery",
     ECHO_RESPONSE_ENCODER, ECHO_REQUEST_DECODER, UNARY_TRANSCODING_WITH_REPEATED_QUERY);
+
+  public static final MethodTranscodingOptions STREAMING_TRANSCODING = new MethodTranscodingOptions()
+    .setHttpMethod(HttpMethod.POST).setPath("/streaming").setBody("*").setResponseStreaming(true);
+
+  public static final TranscodingServiceMethod<StreamingRequest, StreamingResponse> STREAMING_CALL = TranscodingServiceMethod.server(TEST_SERVICE_NAME, "StreamingCall",
+    STREAMING_RESPONSE_ENCODER, STREAMING_REQUEST_DECODER, STREAMING_TRANSCODING);
 
   private static final CharSequence USER_AGENT = HttpHeaders.createOptimized("X-User-Agent");
   private static final String CONTENT_TYPE = "application/json";
@@ -207,6 +215,17 @@ public class ServerTranscodingTest extends GrpcTestBase {
           .setPayload(String.join(",", keys))
           .build();
         response.end(responseMsg);
+      });
+    });
+    grpcServer.callHandler(STREAMING_CALL, request -> {
+      request.handler(requestMsg -> {
+        GrpcServerResponse<StreamingRequest, StreamingResponse> response = request.response();
+        for (int requestedSize : requestMsg.getResponseSizeList()) {
+          char[] value = new char[requestedSize];
+          Arrays.fill(value, 'a');
+          response.write(StreamingResponse.newBuilder().setPayload(new String(value)).build());
+        }
+        response.end();
       });
     });
     httpServer = vertx.createHttpServer(new HttpServerOptions().setPort(port)).requestHandler(grpcServer);
@@ -470,6 +489,35 @@ public class ServerTranscodingTest extends GrpcTestBase {
       assertEquals(200, response.statusCode());
       JsonObject body = decodeBody(response.body().result());
       assertEquals("A", body.getString("payload"));
+    })));
+  }
+
+  @Test
+  public void testServerStreamingSse(TestContext should) {
+    String body = "{\"responseSize\":[1,3,5]}";
+    httpClient.request(HttpMethod.POST, "/streaming").compose(req -> {
+      req.headers().addAll(HEADERS);
+      req.headers().set(HttpHeaders.CONTENT_LENGTH, String.valueOf(body.length()));
+      return req.send(body).compose(response -> response.body().map(response));
+    }).onComplete(should.asyncAssertSuccess(response -> should.verify(v -> {
+      assertEquals(200, response.statusCode());
+      MultiMap headers = response.headers();
+      assertTrue(headers.contains(HttpHeaders.CONTENT_TYPE, "text/event-stream", true));
+      assertNull(headers.get(HttpHeaders.CONTENT_LENGTH));
+      String raw = response.body().result().toString();
+      String[] events = raw.split("\n\n");
+      // Trailing empty entry from the final "\n\n" delimiter is allowed but not required.
+      List<String> payloads = new java.util.ArrayList<>();
+      for (String ev : events) {
+        if (ev.isEmpty()) continue;
+        assertTrue("event must start with 'data: ' but was: " + ev, ev.startsWith("data: "));
+        JsonObject json = new JsonObject(ev.substring("data: ".length()));
+        payloads.add(json.getString("payload"));
+      }
+      assertEquals(3, payloads.size());
+      assertEquals("a", payloads.get(0));
+      assertEquals("aaa", payloads.get(1));
+      assertEquals("aaaaa", payloads.get(2));
     })));
   }
 
