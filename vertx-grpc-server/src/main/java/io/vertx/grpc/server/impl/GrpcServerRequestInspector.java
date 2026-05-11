@@ -27,7 +27,9 @@ final class GrpcServerRequestInspector {
 
   private static boolean determineContentType(String contentType, RequestInspectionDetailsBuilder builder) {
     if (contentType != null) {
-      Matcher matcher = CONTENT_TYPE_PATTERN.matcher(contentType);
+      int semi = contentType.indexOf(';');
+      String mediaType = (semi >= 0 ? contentType.substring(0, semi) : contentType).trim();
+      Matcher matcher = CONTENT_TYPE_PATTERN.matcher(mediaType);
       if (matcher.matches()) {
         if (matcher.group(1) != null) {
           builder.protocol(matcher.group(2) == null ? GrpcProtocol.WEB : GrpcProtocol.WEB_TEXT);
@@ -50,7 +52,7 @@ final class GrpcServerRequestInspector {
         }
         return true;
       } else {
-        if (GrpcProtocol.TRANSCODING.mediaType().equals(contentType)) {
+        if (GrpcProtocol.TRANSCODING.mediaType().equalsIgnoreCase(mediaType)) {
           builder.protocol(GrpcProtocol.TRANSCODING);
           builder.format(WireFormat.JSON);
           return true;

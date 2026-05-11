@@ -81,7 +81,13 @@ public class TranscodingServiceMethodImpl<I, O> implements TranscodingServiceMet
   }
 
   public GrpcInvocation accept(HttpServerRequest httpRequest) {
-    if (!httpRequest.getHeader(HttpHeaders.CONTENT_TYPE).equals(GrpcProtocol.TRANSCODING.mediaType())) {
+    String contentType = httpRequest.getHeader(HttpHeaders.CONTENT_TYPE);
+    if (contentType == null) {
+      return null;
+    }
+    int semi = contentType.indexOf(';');
+    String mediaType = (semi >= 0 ? contentType.substring(0, semi) : contentType).trim();
+    if (!mediaType.equalsIgnoreCase(GrpcProtocol.TRANSCODING.mediaType())) {
       return null;
     }
 
