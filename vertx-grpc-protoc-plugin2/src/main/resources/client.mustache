@@ -34,6 +34,20 @@ public interface {{clientFqn}} extends {{contractFqn}} {
   @io.vertx.codegen.annotations.GenIgnore(io.vertx.codegen.annotations.GenIgnore.PERMITTED_TYPE)
   {{/codegenEnabled}}
   Future<{{outputType}}> {{vertxMethodName}}({{inputType}} request);
+{{#methodSignatures}}
+
+  /**
+   * Calls the {{methodName}} RPC service method.
+   *
+   * @return a future of the {{outputType}} response message
+   */
+  {{#codegenEnabled}}
+  @io.vertx.codegen.annotations.GenIgnore
+  {{/codegenEnabled}}
+  default Future<{{outputType}}> {{vertxMethodName}}({{{paramList}}}) {
+    return {{vertxMethodName}}({{inputType}}.newBuilder(){{builderChain}}.build());
+  }
+{{/methodSignatures}}
 {{/unaryUnaryMethods}}
 {{#unaryManyMethods}}
 
@@ -47,6 +61,20 @@ public interface {{clientFqn}} extends {{contractFqn}} {
   @io.vertx.codegen.annotations.GenIgnore(io.vertx.codegen.annotations.GenIgnore.PERMITTED_TYPE)
   {{/codegenEnabled}}
   Future<ReadStream<{{outputType}}>> {{vertxMethodName}}({{inputType}} request);
+{{#methodSignatures}}
+
+  /**
+   * Calls the {{methodName}} RPC service method.
+   *
+   * @return a future of the {{outputType}} response messages
+   */
+  {{#codegenEnabled}}
+  @io.vertx.codegen.annotations.GenIgnore
+  {{/codegenEnabled}}
+  default Future<ReadStream<{{outputType}}>> {{vertxMethodName}}({{{paramList}}}) {
+    return {{vertxMethodName}}({{inputType}}.newBuilder(){{builderChain}}.build());
+  }
+{{/methodSignatures}}
 {{/unaryManyMethods}}
 {{#manyUnaryMethods}}
 

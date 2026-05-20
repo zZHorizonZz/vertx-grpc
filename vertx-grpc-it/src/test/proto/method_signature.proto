@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+import "google/api/client.proto";
+
+option java_multiple_files = true;
+option java_package = "io.vertx.grpc.it.signature";
+option java_outer_classname = "MethodSignatureProto";
+
+package method_signature;
+
+// Service exercising google.api.method_signature: each RPC declares one or more
+// flattened overloads on the generated Vert.x client.
+service Signature {
+  // Single scalar argument.
+  rpc Greet(GreetRequest) returns (GreetReply) {
+    option (google.api.method_signature) = "name";
+  }
+
+  // Multiple arguments including repeated and message types.
+  rpc SendMessage(SendMessageRequest) returns (SendMessageReply) {
+    option (google.api.method_signature) = "topic,body";
+    option (google.api.method_signature) = "topic,body,tags";
+  }
+
+  // Server-streaming methods are also flattened (input is still unary).
+  rpc StreamGreetings(GreetRequest) returns (stream GreetReply) {
+    option (google.api.method_signature) = "name";
+  }
+
+  // Exercises enum and map field types.
+  rpc Publish(PublishRequest) returns (PublishReply) {
+    option (google.api.method_signature) = "kind,headers";
+  }
+}
+
+enum Kind {
+  KIND_UNKNOWN = 0;
+  KIND_INFO = 1;
+  KIND_WARN = 2;
+}
+
+message PublishRequest {
+  Kind kind = 1;
+  map<string, string> headers = 2;
+}
+
+message PublishReply {
+  string ack = 1;
+}
+
+message GreetRequest {
+  string name = 1;
+}
+
+message GreetReply {
+  string message = 1;
+}
+
+message SendMessageRequest {
+  string topic = 1;
+  string body = 2;
+  repeated string tags = 3;
+}
+
+message SendMessageReply {
+  string ack = 1;
+}

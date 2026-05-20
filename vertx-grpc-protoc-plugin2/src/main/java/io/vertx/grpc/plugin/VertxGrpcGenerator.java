@@ -1,6 +1,7 @@
 package io.vertx.grpc.plugin;
 
 import com.google.api.AnnotationsProto;
+import com.google.api.ClientProto;
 import com.google.common.io.ByteStreams;
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.ExtensionRegistry;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 
 public class VertxGrpcGenerator {
 
-  private static final List<GeneratedMessage.GeneratedExtension<?, ?>> extensions = List.of(AnnotationsProto.http);
+  private static final List<GeneratedMessage.GeneratedExtension<?, ?>> extensions = List.of(AnnotationsProto.http, ClientProto.methodSignature);
   private static final List<PluginProtos.CodeGeneratorResponse.Feature> supportedFeatures = List.of(
     PluginProtos.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL,
     PluginProtos.CodeGeneratorResponse.Feature.FEATURE_SUPPORTS_EDITIONS

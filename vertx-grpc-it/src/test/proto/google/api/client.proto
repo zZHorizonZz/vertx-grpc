@@ -1,0 +1,21 @@
+// Minimal subset of github.com/googleapis/googleapis/google/api/client.proto.
+// Only the method_signature extension is vendored; the rest of client.proto is
+// omitted because it would drag in additional imports (launch_stage.proto,
+// duration.proto, etc.) that are unused here.
+
+syntax = "proto3";
+
+package google.api;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "google.golang.org/genproto/googleapis/api/annotations;annotations";
+option java_multiple_files = true;
+option java_outer_classname = "ClientProto";
+option java_package = "com.google.api";
+option objc_class_prefix = "GAPI";
+
+extend google.protobuf.MethodOptions {
+  // See https://github.com/googleapis/googleapis/blob/master/google/api/client.proto.
+  repeated string method_signature = 1051;
+}

@@ -2,7 +2,9 @@ package io.vertx.grpc.plugin.descriptors;
 
 import io.vertx.grpc.plugin.generation.context.NameUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -66,6 +68,7 @@ public class MethodDescriptor {
   private TranscodingDescriptor transcoding;
   private int methodNumber;
   private Map<String, Object> metadata;
+  private List<MethodSignatureDescriptor> methodSignatures;
 
   public MethodDescriptor() {
     this.name = DEFAULT_NAME;
@@ -77,6 +80,7 @@ public class MethodDescriptor {
     this.documentation = DEFAULT_DOCUMENTATION;
     this.methodNumber = DEFAULT_METHOD_NUMBER;
     this.metadata = new HashMap<>();
+    this.methodSignatures = new ArrayList<>();
   }
 
   /**
@@ -309,6 +313,24 @@ public class MethodDescriptor {
    */
   public MethodDescriptor setMetadata(Map<String, Object> metadata) {
     this.metadata = new HashMap<>(metadata);
+    return this;
+  }
+
+  /**
+   * Retrieves the {@code google.api.method_signature} entries declared on this method, in declaration
+   * order. Each entry represents one flattened client-side overload.
+   */
+  public List<MethodSignatureDescriptor> getMethodSignatures() {
+    return methodSignatures;
+  }
+
+  public MethodDescriptor setMethodSignatures(List<MethodSignatureDescriptor> methodSignatures) {
+    this.methodSignatures = new ArrayList<>(methodSignatures);
+    return this;
+  }
+
+  public MethodDescriptor addMethodSignature(MethodSignatureDescriptor signature) {
+    this.methodSignatures.add(signature);
     return this;
   }
 

@@ -10,6 +10,7 @@ public class ProtobufTypeMapper {
 
   private final Map<String, DescriptorProtos.FileDescriptorProto> filesByName = new HashMap<>();
   private final Map<String, String> typeToJavaMapping = new HashMap<>();
+  private final Map<String, DescriptorProtos.DescriptorProto> messagesByProtoName = new HashMap<>();
 
   public ProtobufTypeMapper(List<DescriptorProtos.FileDescriptorProto> files) {
     // Index all files
@@ -19,6 +20,16 @@ public class ProtobufTypeMapper {
 
     // Build type mappings
     buildTypeMappings(files);
+  }
+
+  /**
+   * Looks up the protobuf message descriptor for a fully-qualified type name (leading dot, e.g.
+   * ".my.pkg.MyMessage").
+   *
+   * @return the descriptor, or null if unknown
+   */
+  public DescriptorProtos.DescriptorProto getMessageDescriptor(String protoTypeName) {
+    return messagesByProtoName.get(protoTypeName);
   }
 
   /**
@@ -109,6 +120,7 @@ public class ProtobufTypeMapper {
     }
 
     typeToJavaMapping.put(protoTypeName, javaTypeName);
+    messagesByProtoName.put(protoTypeName, message);
 
     // Map nested types
     for (DescriptorProtos.DescriptorProto nested : message.getNestedTypeList()) {

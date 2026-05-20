@@ -3,6 +3,9 @@ package io.vertx.grpc.plugin.generation.context;
 import io.vertx.codegen.format.CamelCase;
 import io.vertx.codegen.format.LowerCamelCase;
 import io.vertx.grpc.plugin.descriptors.MethodDescriptor;
+import io.vertx.grpc.plugin.descriptors.MethodSignatureDescriptor;
+
+import java.util.List;
 
 public class MethodTemplateContext {
 
@@ -19,6 +22,7 @@ public class MethodTemplateContext {
   public String javaDoc;
   public String methodHeader;
   public TranscodingTemplateContext transcodingContext;
+  public List<MethodSignatureDescriptor> methodSignatures;
 
   public static MethodTemplateContext fromMethodDescriptor(MethodDescriptor method) {
     MethodTemplateContext context = new MethodTemplateContext();
@@ -42,6 +46,8 @@ public class MethodTemplateContext {
     if (method.getTranscoding() != null) {
       context.transcodingContext = TranscodingTemplateContext.fromTranscodingDescriptor(method.getTranscoding());
     }
+
+    context.methodSignatures = method.getMethodSignatures();
 
     return context;
   }

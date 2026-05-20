@@ -1,11 +1,13 @@
 package io.vertx.grpc.plugin.protoc;
 
 import com.google.api.AnnotationsProto;
+import com.google.api.ClientProto;
 import com.google.api.HttpRule;
 import com.google.common.html.HtmlEscapers;
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.compiler.PluginProtos;
 import io.vertx.grpc.plugin.descriptors.MethodDescriptor;
+import io.vertx.grpc.plugin.descriptors.MethodSignatureDescriptor;
 import io.vertx.grpc.plugin.descriptors.ServiceDescriptor;
 import io.vertx.grpc.plugin.descriptors.TranscodingDescriptor;
 
@@ -19,9 +21,11 @@ import java.util.List;
 public class ProtocRequestConverter {
 
   private final ProtobufTypeMapper typeMapper;
+  private final MethodSignatureResolver signatureResolver;
 
   public ProtocRequestConverter(ProtobufTypeMapper typeMapper) {
     this.typeMapper = typeMapper;
+    this.signatureResolver = new MethodSignatureResolver(typeMapper);
   }
 
   /**
@@ -97,6 +101,19 @@ public class ProtocRequestConverter {
       HttpRule httpRule = methodProto.getOptions().getExtension(AnnotationsProto.http);
       TranscodingDescriptor transcoding = convertTranscoding(httpRule);
       method.setTranscoding(transcoding);
+    }
+
+    // Convert google.api.method_signature annotations: only unary-input methods get flattened
+    // overloads, since the parameters are taken from the request message.
+    if (!methodProto.getClientStreaming()
+      && methodProto.hasOptions()
+      && methodProto.getOptions().getExtensionCount(ClientProto.methodSignature) > 0) {
+      for (String value : methodProto.getOptions().getExtension(ClientProto.methodSignature)) {
+        MethodSignatureDescriptor signature = signatureResolver.resolve(methodProto.getInputType(), value);
+        if (signature != null) {
+          method.addMethodSignature(signature);
+        }
+      }
     }
 
     return method;
