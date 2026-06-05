@@ -17,6 +17,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.HttpVersion;
@@ -42,9 +43,20 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
 
   private static final Pattern CONTENT_TYPE_PATTERN = Pattern.compile("application/grpc(-web(-text)?)?(\\+(json|proto))?");
 
+  // CORS / preflight header names, defined here to avoid depending on optional HttpHeaders constants
+  private static final CharSequence ACCEPT_POST = HttpHeaders.createOptimized("Accept-Post");
+  private static final CharSequence ACCESS_CONTROL_ALLOW_ORIGIN = HttpHeaders.createOptimized("Access-Control-Allow-Origin");
+  private static final CharSequence ACCESS_CONTROL_ALLOW_METHODS = HttpHeaders.createOptimized("Access-Control-Allow-Methods");
+  private static final CharSequence ACCESS_CONTROL_ALLOW_HEADERS = HttpHeaders.createOptimized("Access-Control-Allow-Headers");
+  private static final CharSequence ACCESS_CONTROL_EXPOSE_HEADERS = HttpHeaders.createOptimized("Access-Control-Expose-Headers");
+  private static final CharSequence ACCESS_CONTROL_ALLOW_CREDENTIALS = HttpHeaders.createOptimized("Access-Control-Allow-Credentials");
+  private static final CharSequence ACCESS_CONTROL_MAX_AGE = HttpHeaders.createOptimized("Access-Control-Max-Age");
+  private static final CharSequence ACCESS_CONTROL_REQUEST_HEADERS = HttpHeaders.createOptimized("Access-Control-Request-Headers");
+
   private static final Logger log = LoggerFactory.getLogger(GrpcServer.class);
 
   private final GrpcServerOptions options;
+  private final CorsOriginMatcher corsMatcher;
   private Handler<GrpcServerRequest<Buffer, Buffer>> requestHandler;
 
   private final List<Service> services = new ArrayList<>();
@@ -58,6 +70,7 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
     ServiceLoader<GrpcHttpInvoker> loader = ServiceLoader.load(GrpcHttpInvoker.class);
     this.invokers = loader.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList());
     this.options = new GrpcServerOptions(Objects.requireNonNull(options, "options is null"));
+    this.corsMatcher = this.options.getCors() != null ? new CorsOriginMatcher(this.options.getCors()) : null;
   }
 
   @Override
@@ -80,6 +93,11 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
 
   @Override
   public void handle(HttpServerRequest httpRequest) {
+    if (httpRequest.method() == HttpMethod.OPTIONS) {
+      handlePreflight(httpRequest);
+      return;
+    }
+
     GrpcServerRequestInspector.RequestInspectionDetails details = GrpcServerRequestInspector.inspect(httpRequest);
     if (details != null) {
       int errorCode = validate(details);
@@ -152,6 +170,139 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
     }
 
     return -1;
+  }
+
+  /**
+   * Answer an {@code OPTIONS} request by advertising the HTTP methods ({@code Allow}) and content types
+   * ({@code Accept-Post}) accepted at the request path, plus the CORS headers when configured. The server is the only
+   * writer: the built-in protocols and every invoker only contribute information.
+   */
+  private void handlePreflight(HttpServerRequest httpRequest) {
+    String requestPath = httpRequest.path();
+
+    List<GrpcProtocol> grpcProtocols = new ArrayList<>();
+    for (GrpcProtocol protocol : EnumSet.of(GrpcProtocol.HTTP_2, GrpcProtocol.WEB, GrpcProtocol.WEB_TEXT)) {
+      if (options.isProtocolEnabled(protocol)) {
+        grpcProtocols.add(protocol);
+      }
+    }
+    boolean transcodingEnabled = options.isProtocolEnabled(GrpcProtocol.TRANSCODING);
+
+    Set<HttpMethod> allowedMethods = new LinkedHashSet<>();
+    Set<String> acceptPost = new LinkedHashSet<>();
+    boolean matched = false;
+
+    Set<MethodCallHandler<?, ?>> visited = new HashSet<>();
+    String path = requestPath;
+    while (true) {
+      List<MethodCallHandler<?, ?>> mchList = methodCallHandlers.get(path);
+      if (mchList != null) {
+        for (MethodCallHandler<?, ?> mch : mchList) {
+          if (mch.method == null || !visited.add(mch)) {
+            continue;
+          }
+          // The built-in gRPC protocols only bind at the exact full method path
+          if (requestPath.equals("/" + mch.method.fullMethodName()) && !grpcProtocols.isEmpty()) {
+            matched = true;
+            allowedMethods.add(HttpMethod.POST);
+            for (GrpcProtocol protocol : grpcProtocols) {
+              acceptPost.addAll(protocol.mediaTypes());
+            }
+          }
+          // Transcoding binds via path templates, the invoker reports the verbs for this path
+          if (transcodingEnabled) {
+            for (GrpcHttpInvoker invoker : invokers) {
+              PreflightInfo info = invoker.preflight(httpRequest, mch.method);
+              if (!info.methods().isEmpty()) {
+                matched = true;
+                allowedMethods.addAll(info.methods());
+                acceptPost.addAll(info.acceptPostMediaTypes());
+              }
+            }
+          }
+        }
+      }
+      int idx = path.lastIndexOf('/');
+      if (idx <= 0) {
+        break;
+      }
+      path = path.substring(0, idx);
+    }
+
+    // A generic call handler accepts any path over the gRPC protocols
+    if (!matched && requestHandler != null && !grpcProtocols.isEmpty()) {
+      matched = true;
+      allowedMethods.add(HttpMethod.POST);
+      for (GrpcProtocol protocol : grpcProtocols) {
+        acceptPost.addAll(protocol.mediaTypes());
+      }
+    }
+
+    HttpServerResponse response = httpRequest.response();
+    if (!matched) {
+      response.setStatusCode(404).end();
+      return;
+    }
+
+    allowedMethods.add(HttpMethod.OPTIONS);
+    response.putHeader(HttpHeaders.ALLOW, methodsToString(allowedMethods));
+    if (!acceptPost.isEmpty()) {
+      response.putHeader(ACCEPT_POST, String.join(", ", acceptPost));
+    }
+
+    applyCors(httpRequest, response, allowedMethods);
+
+    response.setStatusCode(204).end();
+  }
+
+  private void applyCors(HttpServerRequest request, HttpServerResponse response, Set<HttpMethod> allowedMethods) {
+    GrpcCorsOptions cors = options.getCors();
+    if (cors == null || corsMatcher == null) {
+      return;
+    }
+    String origin = request.getHeader(HttpHeaders.ORIGIN);
+    if (origin == null || !corsMatcher.isAllowed(origin)) {
+      return;
+    }
+    boolean credentials = cors.getAllowCredentials();
+    if (corsMatcher.allowAll() && !credentials) {
+      response.putHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+    } else {
+      response.putHeader(ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+      response.putHeader(HttpHeaders.VARY, HttpHeaders.ORIGIN);
+    }
+    if (credentials) {
+      response.putHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+    }
+    response.putHeader(ACCESS_CONTROL_ALLOW_METHODS, methodsToString(allowedMethods));
+    Set<String> allowedHeaders = cors.getAllowedHeaders();
+    if (allowedHeaders != null && !allowedHeaders.isEmpty()) {
+      response.putHeader(ACCESS_CONTROL_ALLOW_HEADERS, String.join(", ", allowedHeaders));
+    } else {
+      String requested = request.getHeader(ACCESS_CONTROL_REQUEST_HEADERS);
+      if (requested != null) {
+        response.putHeader(ACCESS_CONTROL_ALLOW_HEADERS, requested);
+      }
+    }
+    Set<String> exposedHeaders = cors.getExposedHeaders();
+    if (exposedHeaders != null && !exposedHeaders.isEmpty()) {
+      response.putHeader(ACCESS_CONTROL_EXPOSE_HEADERS, String.join(", ", exposedHeaders));
+    }
+    int maxAge = cors.getMaxAgeSeconds();
+    if (maxAge >= 0) {
+      response.putHeader(ACCESS_CONTROL_MAX_AGE, Integer.toString(maxAge));
+    }
+  }
+
+  private static String methodsToString(Set<HttpMethod> methods) {
+    StringBuilder sb = new StringBuilder();
+    for (HttpMethod method : methods) {
+      if (sb.length() > 0) {
+        sb.append(", ");
+      }
+      sb.append(method.name());
+    }
+    return sb.toString();
   }
 
   private <Req, Resp> boolean handle(MethodCallHandler<Req, Resp> method, HttpServerRequest httpRequest, GrpcMethodCall methodCall, GrpcProtocol protocol, WireFormat format) {

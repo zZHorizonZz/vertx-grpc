@@ -51,6 +51,7 @@ public class GrpcServerOptions {
   private boolean scheduleDeadlineAutomatically;
   private boolean deadlinePropagation;
   private long maxMessageSize;
+  private GrpcCorsOptions cors;
 
   /**
    * Default options.
@@ -60,6 +61,7 @@ public class GrpcServerOptions {
     scheduleDeadlineAutomatically = DEFAULT_SCHEDULE_DEADLINE_AUTOMATICALLY;
     deadlinePropagation = DEFAULT_PROPAGATE_DEADLINE;
     maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
+    cors = null;
   }
 
   /**
@@ -70,6 +72,7 @@ public class GrpcServerOptions {
     scheduleDeadlineAutomatically = other.scheduleDeadlineAutomatically;
     deadlinePropagation = other.deadlinePropagation;
     maxMessageSize = other.maxMessageSize;
+    cors = other.cors != null ? new GrpcCorsOptions(other.cors) : null;
   }
 
   /**
@@ -186,6 +189,27 @@ public class GrpcServerOptions {
       throw new IllegalArgumentException("Max message size must be <= 0xFFFFFFFF");
     }
     this.maxMessageSize = maxMessageSize;
+    return this;
+  }
+
+  /**
+   * @return the CORS configuration used to answer browser preflight ({@code OPTIONS}) requests, or {@code null} when
+   *         CORS is disabled and only the discovery headers ({@code Allow}, {@code Accept-Post}) are returned
+   */
+  public GrpcCorsOptions getCors() {
+    return cors;
+  }
+
+  /**
+   * Set the CORS configuration used to answer browser preflight ({@code OPTIONS}) requests. When {@code null}, the
+   * server still answers {@code OPTIONS} with the {@code Allow} and {@code Accept-Post} discovery headers but emits no
+   * {@code Access-Control-*} headers.
+   *
+   * @param cors the CORS configuration
+   * @return a reference to this, so the API can be used fluently
+   */
+  public GrpcServerOptions setCors(GrpcCorsOptions cors) {
+    this.cors = cors;
     return this;
   }
 

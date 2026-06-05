@@ -1,6 +1,7 @@
 package io.vertx.grpc.transcoding.impl;
 
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.grpc.common.GrpcMessageDecoder;
@@ -10,16 +11,23 @@ import io.vertx.grpc.server.GrpcProtocol;
 import io.vertx.grpc.server.impl.GrpcInvocation;
 import io.vertx.grpc.server.impl.MountPoint;
 import io.vertx.grpc.server.impl.HttpGrpcOutboundStream;
+import io.vertx.grpc.server.impl.PreflightInfo;
 import io.vertx.grpc.transcoding.*;
 import io.vertx.grpc.transcoding.impl.config.HttpTemplate;
 import io.vertx.grpc.transcoding.impl.config.HttpVariableBinding;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 public class TranscodingServiceMethodImpl<I, O> implements TranscodingServiceMethod<I, O>, MountPoint<I, O> {
+
+  // The HTTP methods an http rule can bind, probed when answering an OPTIONS request
+  private static final List<HttpMethod> CANDIDATE_METHODS = Arrays.asList(
+    HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE, HttpMethod.PATCH);
 
   private final ServiceName serviceName;
   private final String methodName;
@@ -101,6 +109,30 @@ public class TranscodingServiceMethodImpl<I, O> implements TranscodingServiceMet
     }
 
     return null;
+  }
+
+  /**
+   * Reports the HTTP methods bound at the request path and whether {@code application/json} is accepted for POST there,
+   * so the server can build the {@code Allow} and {@code Accept-Post} headers of an OPTIONS response.
+   */
+  public PreflightInfo preflight(HttpServerRequest httpRequest) {
+    Set<HttpMethod> methods = new LinkedHashSet<>();
+    Set<String> acceptPostMediaTypes = new LinkedHashSet<>();
+    if (pathMatcher != null) {
+      for (HttpMethod candidate : CANDIDATE_METHODS) {
+        if (pathMatcher.lookup(candidate.name(), httpRequest.path()) != null) {
+          methods.add(candidate);
+          if (candidate == HttpMethod.POST) {
+            acceptPostMediaTypes.add(GrpcProtocol.TRANSCODING.mediaType());
+          }
+        }
+      }
+    } else if (options == null && httpRequest.path().equals("/" + fullMethodName())) {
+      // Passthrough: a plain gRPC method also accepts application/json over POST at its full method path
+      methods.add(HttpMethod.POST);
+      acceptPostMediaTypes.add(GrpcProtocol.TRANSCODING.mediaType());
+    }
+    return new PreflightInfo(methods, acceptPostMediaTypes);
   }
 
   @Override

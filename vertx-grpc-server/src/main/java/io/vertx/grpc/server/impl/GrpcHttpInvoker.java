@@ -31,4 +31,17 @@ public interface GrpcHttpInvoker {
    */
   <Req, Resp> GrpcInvocation accept(HttpServerRequest request, ServiceMethod<Req, Resp> serviceMethod);
 
+  /**
+   * Reports the HTTP methods and POST media types this invoker binds at the path of an {@code OPTIONS} request, so the
+   * server can build the {@code Allow}, {@code Accept-Post} and CORS preflight headers. The invoker only contributes
+   * information: the server remains the single writer of the response.
+   *
+   * @param request the {@code OPTIONS} request being answered
+   * @param serviceMethod the gRPC service method registered at the request path
+   * @return the contribution, or {@link PreflightInfo#EMPTY} when this invoker binds nothing at the request path
+   */
+  default PreflightInfo preflight(HttpServerRequest request, ServiceMethod<?, ?> serviceMethod) {
+    return PreflightInfo.EMPTY;
+  }
+
 }

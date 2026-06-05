@@ -15,4 +15,5 @@ open module io.vertx.tests.server {
   requires testcontainers;
   exports io.vertx.tests.server.grpc.web;
   exports io.vertx.tests.server;
+  provides io.vertx.grpc.server.impl.GrpcHttpInvoker with io.vertx.tests.server.TestPreflightInvoker;
 }

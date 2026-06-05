@@ -14,24 +14,29 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.server.impl.GrpcHttpInvoker;
 import io.vertx.grpc.server.impl.GrpcInvocation;
+import io.vertx.grpc.server.impl.PreflightInfo;
 
 public class TranscodingInvoker implements GrpcHttpInvoker {
 
   @Override
   public <Req, Resp> GrpcInvocation accept(HttpServerRequest request, ServiceMethod<Req, Resp> serviceMethod) {
-    TranscodingServiceMethodImpl<Req, Resp> transcodingServiceMethod;
+    return asTranscodingServiceMethod(serviceMethod).accept(request);
+  }
 
+  @Override
+  public PreflightInfo preflight(HttpServerRequest request, ServiceMethod<?, ?> serviceMethod) {
+    return asTranscodingServiceMethod(serviceMethod).preflight(request);
+  }
+
+  private <Req, Resp> TranscodingServiceMethodImpl<Req, Resp> asTranscodingServiceMethod(ServiceMethod<Req, Resp> serviceMethod) {
     if (serviceMethod instanceof TranscodingServiceMethodImpl) {
-      transcodingServiceMethod = (TranscodingServiceMethodImpl<Req, Resp>) serviceMethod;
-    } else {
-      transcodingServiceMethod = new TranscodingServiceMethodImpl<>(
-        serviceMethod.serviceName(),
-        serviceMethod.methodName(),
-        serviceMethod.encoder(),
-        serviceMethod.decoder()
-      );
+      return (TranscodingServiceMethodImpl<Req, Resp>) serviceMethod;
     }
-
-    return transcodingServiceMethod.accept(request);
+    return new TranscodingServiceMethodImpl<>(
+      serviceMethod.serviceName(),
+      serviceMethod.methodName(),
+      serviceMethod.encoder(),
+      serviceMethod.decoder()
+    );
   }
 }

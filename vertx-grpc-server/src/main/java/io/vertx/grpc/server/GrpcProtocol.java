@@ -2,7 +2,10 @@ package io.vertx.grpc.server;
 
 import io.vertx.core.http.HttpVersion;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 
 /**
  * Describe the underlying gRPC protocol.
@@ -31,10 +34,17 @@ public enum GrpcProtocol {
 
   private final String mediaType;
   private final EnumSet<HttpVersion> acceptedVersions;
+  private final List<String> mediaTypes;
 
   GrpcProtocol(String mediaType, EnumSet<HttpVersion> acceptedVersions) {
     this.mediaType = mediaType;
     this.acceptedVersions = acceptedVersions;
+    // The gRPC family negotiates the message format with a +proto / +json suffix, transcoding does not
+    if (mediaType.startsWith("application/grpc")) {
+      this.mediaTypes = Collections.unmodifiableList(Arrays.asList(mediaType, mediaType + "+proto", mediaType + "+json"));
+    } else {
+      this.mediaTypes = Collections.singletonList(mediaType);
+    }
   }
 
   /**
@@ -49,5 +59,13 @@ public enum GrpcProtocol {
    */
   public String mediaType() {
     return mediaType;
+  }
+
+  /**
+   * @return the media types this protocol accepts, including the {@code +proto} and {@code +json} message format
+   *         variants for the gRPC family, used to advertise accepted content types in an {@code OPTIONS} response
+   */
+  public List<String> mediaTypes() {
+    return mediaTypes;
   }
 }

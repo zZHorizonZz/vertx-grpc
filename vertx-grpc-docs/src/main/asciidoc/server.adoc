@@ -238,6 +238,28 @@ CorsHandler corsHandler = CorsHandler.create()
 router.route("/com.mycompany.MyService/*").handler(corsHandler);
 ----
 
+Alternatively, the gRPC server can answer HTTP `OPTIONS` preflight requests itself, without a Vert.x Web router.
+This is useful because a fronting CORS handler intercepts the preflight before it reaches the gRPC server, so handling
+it in the server is the only way to produce a gRPC-aware response. The server advertises the content types it accepts
+for `POST` with the `Accept-Post` header and the HTTP methods bound at the request path with the `Allow` header.
+
+To let the server handle CORS preflight, configure {@link io.vertx.grpc.server.GrpcCorsOptions} on the server options:
+
+[source,java]
+----
+GrpcServerOptions options = new GrpcServerOptions()
+  .setCors(new GrpcCorsOptions()
+    .addAllowedOrigin("https://www.mycompany.com")
+    .setAllowCredentials(true)
+    .setMaxAgeSeconds(3600));
+GrpcServer server = GrpcServer.server(vertx, options);
+----
+
+The allowed request headers and exposed response headers default to the gRPC-Web client headers and the gRPC trailers
+(`grpc-status`, `grpc-message`, `grpc-status-details-bin`) respectively, and can be overridden on the options.
+When no {@link io.vertx.grpc.server.GrpcCorsOptions} is set, the server still answers `OPTIONS` with the `Allow` and
+`Accept-Post` discovery headers but emits no `Access-Control-*` headers.
+
 ==== gRPC Transcoding
 
 The Vert.x gRPC server supports <<grpc-transcoding,gRPC transcoding>> that enables mapping between HTTP/JSON requests and gRPC services.

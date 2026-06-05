@@ -9,10 +9,11 @@ module io.vertx.grpc.server {
   requires io.vertx.codegen.api;
   requires io.netty.codec;
   requires io.netty.buffer;
+  requires io.netty.common;
   requires com.google.protobuf;
 
   uses io.vertx.grpc.server.impl.GrpcHttpInvoker;
 
   exports io.vertx.grpc.server;
-  exports io.vertx.grpc.server.impl to io.vertx.grpc.transcoding, io.vertx.grpc.reflection, io.vertx.grpc.health, io.vertx.grpc.eventbus;
+  exports io.vertx.grpc.server.impl to io.vertx.grpc.transcoding, io.vertx.grpc.reflection, io.vertx.grpc.health, io.vertx.grpc.eventbus, io.vertx.tests.server;
 }

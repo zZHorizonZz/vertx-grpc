@@ -35,6 +35,11 @@ public class GrpcServerOptionsConverter {
             obj.setMaxMessageSize(((Number)member.getValue()).longValue());
           }
           break;
+        case "cors":
+          if (member.getValue() instanceof JsonObject) {
+            obj.setCors(new io.vertx.grpc.server.GrpcCorsOptions((io.vertx.core.json.JsonObject)member.getValue()));
+          }
+          break;
       }
     }
   }
@@ -52,5 +57,8 @@ public class GrpcServerOptionsConverter {
     json.put("scheduleDeadlineAutomatically", obj.getScheduleDeadlineAutomatically());
     json.put("deadlinePropagation", obj.getDeadlinePropagation());
     json.put("maxMessageSize", obj.getMaxMessageSize());
+    if (obj.getCors() != null) {
+      json.put("cors", obj.getCors().toJson());
+    }
   }
 }
