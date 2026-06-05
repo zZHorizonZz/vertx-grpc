@@ -134,6 +134,17 @@ public class GrpcCorsOptions {
   }
 
   /**
+   * Remove an exact allowed origin.
+   *
+   * @param origin the origin to remove
+   * @return a reference to this, so the API can be used fluently
+   */
+  public GrpcCorsOptions removeAllowedOrigin(String origin) {
+    allowedOrigins.remove(origin);
+    return this;
+  }
+
+  /**
    * @return the origin patterns (regular expressions) allowed to perform cross-origin requests
    */
   public List<String> getAllowedOriginPatterns() {
@@ -159,6 +170,17 @@ public class GrpcCorsOptions {
    */
   public GrpcCorsOptions addAllowedOriginPattern(String pattern) {
     allowedOriginPatterns.add(pattern);
+    return this;
+  }
+
+  /**
+   * Remove an allowed origin pattern (regular expression).
+   *
+   * @param pattern the pattern to remove
+   * @return a reference to this, so the API can be used fluently
+   */
+  public GrpcCorsOptions removeAllowedOriginPattern(String pattern) {
+    allowedOriginPatterns.remove(pattern);
     return this;
   }
 
@@ -210,6 +232,17 @@ public class GrpcCorsOptions {
   }
 
   /**
+   * Remove a request header from the set allowed by a preflight response, including one of the defaults.
+   *
+   * @param header the header to remove
+   * @return a reference to this, so the API can be used fluently
+   */
+  public GrpcCorsOptions removeAllowedHeader(String header) {
+    allowedHeaders.remove(header);
+    return this;
+  }
+
+  /**
    * @return the response headers exposed to the client
    */
   public Set<String> getExposedHeaders() {
@@ -235,6 +268,17 @@ public class GrpcCorsOptions {
    */
   public GrpcCorsOptions addExposedHeader(String header) {
     exposedHeaders.add(header);
+    return this;
+  }
+
+  /**
+   * Remove a response header from the set exposed to the client, including one of the defaults.
+   *
+   * @param header the header to remove
+   * @return a reference to this, so the API can be used fluently
+   */
+  public GrpcCorsOptions removeExposedHeader(String header) {
+    exposedHeaders.remove(header);
     return this;
   }
 

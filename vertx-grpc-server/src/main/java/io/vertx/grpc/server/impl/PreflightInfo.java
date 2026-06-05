@@ -13,6 +13,7 @@ package io.vertx.grpc.server.impl;
 import io.vertx.core.http.HttpMethod;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -26,16 +27,16 @@ import java.util.Set;
 public final class PreflightInfo {
 
   /**
-   * An empty contribution: no allowed methods and no accepted POST media types.
+   * An empty contribution: no bound methods and no accepted media types.
    */
-  public static final PreflightInfo EMPTY = new PreflightInfo(Collections.emptySet(), Collections.emptySet());
+  public static final PreflightInfo EMPTY = new PreflightInfo(Collections.emptySet(), Collections.emptyMap());
 
   private final Set<HttpMethod> methods;
-  private final Set<String> acceptPostMediaTypes;
+  private final Map<HttpMethod, Set<String>> acceptedMediaTypes;
 
-  public PreflightInfo(Set<HttpMethod> methods, Set<String> acceptPostMediaTypes) {
+  public PreflightInfo(Set<HttpMethod> methods, Map<HttpMethod, Set<String>> acceptedMediaTypes) {
     this.methods = methods;
-    this.acceptPostMediaTypes = acceptPostMediaTypes;
+    this.acceptedMediaTypes = acceptedMediaTypes;
   }
 
   /**
@@ -47,10 +48,11 @@ public final class PreflightInfo {
   }
 
   /**
-   * @return the media types accepted for {@code POST} at the request path, contributing to the
-   *         {@code Accept-Post} header
+   * @return the media types accepted in a request body, keyed by the HTTP method that accepts them. The server
+   *         advertises these with the standard per-verb headers, namely {@code Accept-Post} for {@code POST} and
+   *         {@code Accept-Patch} for {@code PATCH}.
    */
-  public Set<String> acceptPostMediaTypes() {
-    return acceptPostMediaTypes;
+  public Map<HttpMethod, Set<String>> acceptedMediaTypes() {
+    return acceptedMediaTypes;
   }
 }

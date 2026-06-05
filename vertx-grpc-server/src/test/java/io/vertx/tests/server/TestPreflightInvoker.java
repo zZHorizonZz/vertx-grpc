@@ -17,7 +17,10 @@ import io.vertx.grpc.server.impl.GrpcHttpInvoker;
 import io.vertx.grpc.server.impl.GrpcInvocation;
 import io.vertx.grpc.server.impl.PreflightInfo;
 
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -41,8 +44,8 @@ public class TestPreflightInvoker implements GrpcHttpInvoker {
     Set<HttpMethod> methods = new LinkedHashSet<>();
     methods.add(HttpMethod.GET);
     methods.add(HttpMethod.POST);
-    Set<String> acceptPost = new LinkedHashSet<>();
-    acceptPost.add("application/json");
-    return new PreflightInfo(methods, acceptPost);
+    Map<HttpMethod, Set<String>> acceptedMediaTypes = new LinkedHashMap<>();
+    acceptedMediaTypes.put(HttpMethod.POST, new LinkedHashSet<>(Arrays.asList("application/json")));
+    return new PreflightInfo(methods, acceptedMediaTypes);
   }
 }

@@ -43,15 +43,8 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
 
   private static final Pattern CONTENT_TYPE_PATTERN = Pattern.compile("application/grpc(-web(-text)?)?(\\+(json|proto))?");
 
-  // CORS / preflight header names, defined here to avoid depending on optional HttpHeaders constants
+  // Accept-Post is not declared by Vert.x HttpHeaders (it is a niche W3C header), every other header reuses HttpHeaders
   private static final CharSequence ACCEPT_POST = HttpHeaders.createOptimized("Accept-Post");
-  private static final CharSequence ACCESS_CONTROL_ALLOW_ORIGIN = HttpHeaders.createOptimized("Access-Control-Allow-Origin");
-  private static final CharSequence ACCESS_CONTROL_ALLOW_METHODS = HttpHeaders.createOptimized("Access-Control-Allow-Methods");
-  private static final CharSequence ACCESS_CONTROL_ALLOW_HEADERS = HttpHeaders.createOptimized("Access-Control-Allow-Headers");
-  private static final CharSequence ACCESS_CONTROL_EXPOSE_HEADERS = HttpHeaders.createOptimized("Access-Control-Expose-Headers");
-  private static final CharSequence ACCESS_CONTROL_ALLOW_CREDENTIALS = HttpHeaders.createOptimized("Access-Control-Allow-Credentials");
-  private static final CharSequence ACCESS_CONTROL_MAX_AGE = HttpHeaders.createOptimized("Access-Control-Max-Age");
-  private static final CharSequence ACCESS_CONTROL_REQUEST_HEADERS = HttpHeaders.createOptimized("Access-Control-Request-Headers");
 
   private static final Logger log = LoggerFactory.getLogger(GrpcServer.class);
 
@@ -189,7 +182,8 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
     boolean transcodingEnabled = options.isProtocolEnabled(GrpcProtocol.TRANSCODING);
 
     Set<HttpMethod> allowedMethods = new LinkedHashSet<>();
-    Set<String> acceptPost = new LinkedHashSet<>();
+    // Request body media types keyed by the method that accepts them, advertised with Accept-Post / Accept-Patch
+    Map<HttpMethod, Set<String>> acceptedMediaTypes = new LinkedHashMap<>();
     boolean matched = false;
 
     Set<MethodCallHandler<?, ?>> visited = new HashSet<>();
@@ -201,22 +195,23 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
           if (mch.method == null || !visited.add(mch)) {
             continue;
           }
-          // The built-in gRPC protocols only bind at the exact full method path
+          // The built-in gRPC protocols only bind at the exact full method path, over POST
           if (requestPath.equals("/" + mch.method.fullMethodName()) && !grpcProtocols.isEmpty()) {
             matched = true;
             allowedMethods.add(HttpMethod.POST);
             for (GrpcProtocol protocol : grpcProtocols) {
-              acceptPost.addAll(protocol.mediaTypes());
+              acceptedMediaTypes.computeIfAbsent(HttpMethod.POST, m -> new LinkedHashSet<>()).addAll(protocol.mediaTypes());
             }
           }
-          // Transcoding binds via path templates, the invoker reports the verbs for this path
+          // Transcoding binds via path templates, the invoker reports the verbs and body media types for this path
           if (transcodingEnabled) {
             for (GrpcHttpInvoker invoker : invokers) {
               PreflightInfo info = invoker.preflight(httpRequest, mch.method);
               if (!info.methods().isEmpty()) {
                 matched = true;
                 allowedMethods.addAll(info.methods());
-                acceptPost.addAll(info.acceptPostMediaTypes());
+                info.acceptedMediaTypes().forEach((method, mediaTypes) ->
+                  acceptedMediaTypes.computeIfAbsent(method, m -> new LinkedHashSet<>()).addAll(mediaTypes));
               }
             }
           }
@@ -234,7 +229,7 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
       matched = true;
       allowedMethods.add(HttpMethod.POST);
       for (GrpcProtocol protocol : grpcProtocols) {
-        acceptPost.addAll(protocol.mediaTypes());
+        acceptedMediaTypes.computeIfAbsent(HttpMethod.POST, m -> new LinkedHashSet<>()).addAll(protocol.mediaTypes());
       }
     }
 
@@ -246,8 +241,14 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
 
     allowedMethods.add(HttpMethod.OPTIONS);
     response.putHeader(HttpHeaders.ALLOW, methodsToString(allowedMethods));
-    if (!acceptPost.isEmpty()) {
-      response.putHeader(ACCEPT_POST, String.join(", ", acceptPost));
+    // Accept-Post and Accept-Patch are the only standard per-verb content negotiation headers
+    Set<String> postMediaTypes = acceptedMediaTypes.get(HttpMethod.POST);
+    if (postMediaTypes != null && !postMediaTypes.isEmpty()) {
+      response.putHeader(ACCEPT_POST, String.join(", ", postMediaTypes));
+    }
+    Set<String> patchMediaTypes = acceptedMediaTypes.get(HttpMethod.PATCH);
+    if (patchMediaTypes != null && !patchMediaTypes.isEmpty()) {
+      response.putHeader(HttpHeaders.ACCEPT_PATCH, String.join(", ", patchMediaTypes));
     }
 
     applyCors(httpRequest, response, allowedMethods);
@@ -266,31 +267,31 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
     }
     boolean credentials = cors.getAllowCredentials();
     if (corsMatcher.allowAll() && !credentials) {
-      response.putHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+      response.putHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
     } else {
-      response.putHeader(ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+      response.putHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
       response.putHeader(HttpHeaders.VARY, HttpHeaders.ORIGIN);
     }
     if (credentials) {
-      response.putHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+      response.putHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
     }
-    response.putHeader(ACCESS_CONTROL_ALLOW_METHODS, methodsToString(allowedMethods));
+    response.putHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, methodsToString(allowedMethods));
     Set<String> allowedHeaders = cors.getAllowedHeaders();
     if (allowedHeaders != null && !allowedHeaders.isEmpty()) {
-      response.putHeader(ACCESS_CONTROL_ALLOW_HEADERS, String.join(", ", allowedHeaders));
+      response.putHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, String.join(", ", allowedHeaders));
     } else {
-      String requested = request.getHeader(ACCESS_CONTROL_REQUEST_HEADERS);
+      String requested = request.getHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS);
       if (requested != null) {
-        response.putHeader(ACCESS_CONTROL_ALLOW_HEADERS, requested);
+        response.putHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, requested);
       }
     }
     Set<String> exposedHeaders = cors.getExposedHeaders();
     if (exposedHeaders != null && !exposedHeaders.isEmpty()) {
-      response.putHeader(ACCESS_CONTROL_EXPOSE_HEADERS, String.join(", ", exposedHeaders));
+      response.putHeader(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, String.join(", ", exposedHeaders));
     }
     int maxAge = cors.getMaxAgeSeconds();
     if (maxAge >= 0) {
-      response.putHeader(ACCESS_CONTROL_MAX_AGE, Integer.toString(maxAge));
+      response.putHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE, Integer.toString(maxAge));
     }
   }
 

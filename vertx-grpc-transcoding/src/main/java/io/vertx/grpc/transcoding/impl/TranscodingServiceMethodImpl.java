@@ -19,15 +19,17 @@ import io.vertx.grpc.transcoding.impl.config.HttpVariableBinding;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class TranscodingServiceMethodImpl<I, O> implements TranscodingServiceMethod<I, O>, MountPoint<I, O> {
 
-  // The HTTP methods an http rule can bind, probed when answering an OPTIONS request
-  private static final List<HttpMethod> CANDIDATE_METHODS = Arrays.asList(
-    HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE, HttpMethod.PATCH);
+  // The bound methods that carry a request body, so the accepted body media type is advertised for them
+  private static final Set<HttpMethod> BODY_METHODS = new HashSet<>(Arrays.asList(
+    HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH));
 
   private final ServiceName serviceName;
   private final String methodName;
@@ -112,27 +114,46 @@ public class TranscodingServiceMethodImpl<I, O> implements TranscodingServiceMet
   }
 
   /**
-   * Reports the HTTP methods bound at the request path and whether {@code application/json} is accepted for POST there,
-   * so the server can build the {@code Allow} and {@code Accept-Post} headers of an OPTIONS response.
+   * Reports the HTTP methods bound at the request path and, for each method that carries a body, the accepted body
+   * media type ({@code application/json}), so the server can build the {@code Allow}, {@code Accept-Post} and
+   * {@code Accept-Patch} headers of an OPTIONS response.
    */
   public PreflightInfo preflight(HttpServerRequest httpRequest) {
     Set<HttpMethod> methods = new LinkedHashSet<>();
-    Set<String> acceptPostMediaTypes = new LinkedHashSet<>();
+    Map<HttpMethod, Set<String>> acceptedMediaTypes = new LinkedHashMap<>();
     if (pathMatcher != null) {
-      for (HttpMethod candidate : CANDIDATE_METHODS) {
+      // Probe the verbs this method actually declares, including custom ones, rather than a fixed list
+      Set<HttpMethod> declared = new LinkedHashSet<>();
+      collectHttpMethods(options, declared);
+      for (HttpMethod candidate : declared) {
         if (pathMatcher.lookup(candidate.name(), httpRequest.path()) != null) {
           methods.add(candidate);
-          if (candidate == HttpMethod.POST) {
-            acceptPostMediaTypes.add(GrpcProtocol.TRANSCODING.mediaType());
+          if (BODY_METHODS.contains(candidate)) {
+            acceptedMediaTypes.computeIfAbsent(candidate, m -> new LinkedHashSet<>()).add(GrpcProtocol.TRANSCODING.mediaType());
           }
         }
       }
     } else if (options == null && httpRequest.path().equals("/" + fullMethodName())) {
       // Passthrough: a plain gRPC method also accepts application/json over POST at its full method path
       methods.add(HttpMethod.POST);
-      acceptPostMediaTypes.add(GrpcProtocol.TRANSCODING.mediaType());
+      acceptedMediaTypes.computeIfAbsent(HttpMethod.POST, m -> new LinkedHashSet<>()).add(GrpcProtocol.TRANSCODING.mediaType());
     }
-    return new PreflightInfo(methods, acceptPostMediaTypes);
+    return new PreflightInfo(methods, acceptedMediaTypes);
+  }
+
+  private static void collectHttpMethods(MethodTranscodingOptions options, Set<HttpMethod> out) {
+    if (options == null) {
+      return;
+    }
+    if (options.getHttpMethod() != null) {
+      out.add(options.getHttpMethod());
+    }
+    List<MethodTranscodingOptions> bindings = options.getAdditionalBindings();
+    if (bindings != null) {
+      for (MethodTranscodingOptions binding : bindings) {
+        collectHttpMethods(binding, out);
+      }
+    }
   }
 
   @Override

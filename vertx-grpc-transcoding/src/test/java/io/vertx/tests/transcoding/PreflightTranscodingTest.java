@@ -108,6 +108,21 @@ public class PreflightTranscodingTest extends GrpcTestBase {
   }
 
   @Test
+  public void testCustomVerbIsAdvertised(TestContext should) {
+    GrpcServer server = GrpcServer.server(vertx);
+    // A non-standard HTTP verb, outside the common GET/POST/PUT/DELETE/PATCH set
+    server.callHandler(method("AclWidget", HttpMethod.valueOf("ACL"), "/widgets", "*"), req -> req.response().end());
+    startServer(server, should);
+
+    options(should, "/widgets", (ctx, resp) -> {
+      ctx.assertEquals(204, resp.statusCode());
+      String allow = resp.getHeader("Allow");
+      ctx.assertNotNull(allow);
+      ctx.assertTrue(allow.contains("ACL"), allow);
+    });
+  }
+
+  @Test
   public void testUnknownPathIs404(TestContext should) {
     GrpcServer server = GrpcServer.server(vertx);
     server.callHandler(method("GetItem", HttpMethod.GET, "/items/{id}", null), req -> req.response().end());
