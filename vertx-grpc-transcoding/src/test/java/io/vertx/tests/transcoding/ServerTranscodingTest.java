@@ -23,6 +23,8 @@ import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.common.*;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
+import io.vertx.grpc.protobuf.ProtobufMessageEncoder;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerOptions;
 import io.vertx.grpc.server.GrpcServerResponse;
@@ -53,12 +55,12 @@ public class ServerTranscodingTest extends GrpcTestBase {
     return ret;
   }
 
-  public static GrpcMessageDecoder<Empty> EMPTY_DECODER = GrpcMessageDecoder.decoder(Empty.newBuilder());
-  public static GrpcMessageEncoder<Empty> EMPTY_ENCODER = GrpcMessageEncoder.encoder();
-  public static GrpcMessageDecoder<EchoRequest> ECHO_REQUEST_DECODER = GrpcMessageDecoder.decoder(EchoRequest.newBuilder());
-  public static GrpcMessageDecoder<EchoRequestBody> ECHO_REQUEST_BODY_DECODER = GrpcMessageDecoder.decoder(EchoRequestBody.newBuilder());
-  public static GrpcMessageEncoder<EchoResponse> ECHO_RESPONSE_ENCODER = GrpcMessageEncoder.encoder();
-  public static GrpcMessageEncoder<EchoResponseBody> ECHO_RESPONSE_BODY_ENCODER = GrpcMessageEncoder.encoder();
+  public static GrpcMessageDecoder<Empty> EMPTY_DECODER = ProtobufMessageDecoder.decoder(Empty.newBuilder());
+  public static GrpcMessageEncoder<Empty> EMPTY_ENCODER = ProtobufMessageEncoder.encoder();
+  public static GrpcMessageDecoder<EchoRequest> ECHO_REQUEST_DECODER = ProtobufMessageDecoder.decoder(EchoRequest.newBuilder());
+  public static GrpcMessageDecoder<EchoRequestBody> ECHO_REQUEST_BODY_DECODER = ProtobufMessageDecoder.decoder(EchoRequestBody.newBuilder());
+  public static GrpcMessageEncoder<EchoResponse> ECHO_RESPONSE_ENCODER = ProtobufMessageEncoder.encoder();
+  public static GrpcMessageEncoder<EchoResponseBody> ECHO_RESPONSE_BODY_ENCODER = ProtobufMessageEncoder.encoder();
 
   public static final ServiceName TEST_SERVICE_NAME = ServiceName.create(TestServiceGrpc.SERVICE_NAME);
 

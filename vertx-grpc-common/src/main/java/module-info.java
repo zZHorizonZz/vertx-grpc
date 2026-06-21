@@ -8,8 +8,6 @@ module io.vertx.grpc.common {
   requires io.netty.codec;
   requires io.netty.codec.compression;
   requires io.netty.transport;
-  requires com.google.protobuf;
-  requires com.google.protobuf.util;
 
   exports io.vertx.grpc.common;
   exports io.vertx.grpc.common.impl;

@@ -211,6 +211,10 @@
 
   <modules>
     <module>vertx-grpc-common</module>
+    <module>vertx-grpc-protobuf</module>
+    <module>vertx-schema</module>
+    <module>vertx-schema-protobuf</module>
+    <module>vertx-grpc-schema</module>
     <module>vertx-grpc-transcoding</module>
     <module>vertx-grpc-server</module>
     <module>vertx-grpc-reflection</module>

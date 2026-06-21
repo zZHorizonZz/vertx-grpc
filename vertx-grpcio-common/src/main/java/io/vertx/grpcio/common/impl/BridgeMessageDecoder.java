@@ -24,14 +24,14 @@ import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.json.DecodeException;
 import io.vertx.grpc.common.CodecException;
 import io.vertx.grpc.common.GrpcMessage;
-import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.WireFormat;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-public class BridgeMessageDecoder<T> implements GrpcMessageDecoder<T> {
+public class BridgeMessageDecoder<T> implements ProtobufMessageDecoder<T> {
 
   private MethodDescriptor.Marshaller<T> marshaller;
   private final MessageLite messageLite;

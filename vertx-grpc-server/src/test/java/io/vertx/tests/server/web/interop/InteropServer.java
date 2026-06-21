@@ -17,6 +17,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.grpc.common.*;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
+import io.vertx.grpc.protobuf.ProtobufMessageEncoder;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerOptions;
 import io.vertx.tests.server.grpc.empty.Empty;
@@ -34,12 +36,12 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class InteropServer extends AbstractVerticle {
 
-  public static GrpcMessageDecoder<Empty> EMPTY_DECODER = GrpcMessageDecoder.decoder(Empty.newBuilder());
-  public static GrpcMessageEncoder<Empty> EMPTY_ENCODER = GrpcMessageEncoder.encoder();
-  public static GrpcMessageDecoder<SimpleRequest> ECHO_REQUEST_DECODER = GrpcMessageDecoder.decoder(SimpleRequest.newBuilder());
-  public static GrpcMessageEncoder<SimpleResponse> ECHO_RESPONSE_ENCODER = GrpcMessageEncoder.encoder();
-  public static GrpcMessageDecoder<StreamingOutputCallRequest> STREAMING_REQUEST_DECODER = GrpcMessageDecoder.decoder(StreamingOutputCallRequest.newBuilder());
-  public static GrpcMessageEncoder<StreamingOutputCallResponse> STREAMING_RESPONSE_ENCODER = GrpcMessageEncoder.encoder();
+  public static GrpcMessageDecoder<Empty> EMPTY_DECODER = ProtobufMessageDecoder.decoder(Empty.newBuilder());
+  public static GrpcMessageEncoder<Empty> EMPTY_ENCODER = ProtobufMessageEncoder.encoder();
+  public static GrpcMessageDecoder<SimpleRequest> ECHO_REQUEST_DECODER = ProtobufMessageDecoder.decoder(SimpleRequest.newBuilder());
+  public static GrpcMessageEncoder<SimpleResponse> ECHO_RESPONSE_ENCODER = ProtobufMessageEncoder.encoder();
+  public static GrpcMessageDecoder<StreamingOutputCallRequest> STREAMING_REQUEST_DECODER = ProtobufMessageDecoder.decoder(StreamingOutputCallRequest.newBuilder());
+  public static GrpcMessageEncoder<StreamingOutputCallResponse> STREAMING_RESPONSE_ENCODER = ProtobufMessageEncoder.encoder();
 
   public static final ServiceName TEST_SERVICE_NAME = ServiceName.create("grpc.testing.TestService");
   public static final ServiceMethod<Empty, Empty> EMPTY_CALL = ServiceMethod.server(TEST_SERVICE_NAME, "EmptyCall", EMPTY_ENCODER, EMPTY_DECODER);

@@ -13,6 +13,8 @@ import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.GrpcMessageEncoder;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
+import io.vertx.grpc.protobuf.ProtobufMessageEncoder;
 
 /**
  * <p>A client for invoking the Greeter gRPC service.</p>
@@ -25,8 +27,8 @@ public interface GreeterGrpcClient extends GreeterClient {
   ServiceMethod<examples.grpc.HelloReply, examples.grpc.HelloRequest> SayHello = ServiceMethod.client(
     ServiceName.create("examples.grpc", "Greeter"),
     "SayHello",
-    GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder(examples.grpc.HelloReply.newBuilder()));
+    ProtobufMessageEncoder.encoder(),
+    ProtobufMessageDecoder.decoder(examples.grpc.HelloReply.newBuilder()));
 
   /**
    * Create and return a Greeter gRPC service client. The assumed wire format is Protobuf.

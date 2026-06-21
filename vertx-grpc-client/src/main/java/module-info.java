@@ -8,7 +8,6 @@ module io.vertx.grpc.client{
   requires static io.vertx.docgen;
   requires static io.vertx.codegen.api;
   requires static io.vertx.codegen.json;
-  requires com.google.protobuf;
   requires com.google.common;
   exports io.vertx.grpc.client;
   exports io.vertx.grpc.client.impl to io.vertx.tests.client, io.vertx.grpc.eventbus;

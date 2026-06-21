@@ -1,6 +1,7 @@
 module io.vertx.grpc.reflection {
   requires io.vertx.core;
   requires io.vertx.grpc.common;
+  requires io.vertx.grpc.protobuf;
   requires io.vertx.grpc.server;
   requires static io.vertx.docgen;
   requires static io.vertx.codegen.json;

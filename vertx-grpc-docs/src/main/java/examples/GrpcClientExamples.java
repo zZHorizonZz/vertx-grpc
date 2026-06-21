@@ -14,6 +14,8 @@ import io.vertx.core.streams.ReadStream;
 import io.vertx.docgen.Source;
 import io.vertx.grpc.client.*;
 import io.vertx.grpc.common.*;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
+import io.vertx.grpc.protobuf.ProtobufMessageEncoder;
 
 import java.util.concurrent.TimeUnit;
 
@@ -29,8 +31,8 @@ public class GrpcClientExamples {
     ServiceMethod<HelloReply, HelloRequest> sayHello = ServiceMethod.client(
       serviceName,
       "SayHello",
-      GrpcMessageEncoder.encoder(),
-      GrpcMessageDecoder.decoder(HelloReply.newBuilder()));
+      ProtobufMessageEncoder.encoder(),
+      ProtobufMessageDecoder.decoder(HelloReply.newBuilder()));
   }
 
   public void reuseServiceMethod() {

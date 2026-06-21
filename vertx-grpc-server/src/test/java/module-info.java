@@ -8,6 +8,7 @@ open module io.vertx.tests.server {
   requires io.grpc.protobuf;
   requires io.vertx.core;
   requires io.vertx.grpc.common;
+  requires io.vertx.grpc.protobuf;
   requires io.vertx.grpc.server;
   requires io.vertx.testing.unit;
   requires io.vertx.tests.common;

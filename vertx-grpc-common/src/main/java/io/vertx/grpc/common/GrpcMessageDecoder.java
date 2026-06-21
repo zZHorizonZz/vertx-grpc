@@ -10,64 +10,13 @@
  */
 package io.vertx.grpc.common;
 
-import com.google.protobuf.Descriptors;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
-import com.google.protobuf.MessageOrBuilder;
-import com.google.protobuf.Parser;
-import com.google.protobuf.util.JsonFormat;
-import io.vertx.codegen.annotations.Unstable;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
 
-import java.nio.charset.StandardCharsets;
-import java.util.function.Supplier;
-
 public interface GrpcMessageDecoder<T> {
-
-  /**
-   * Create a decoder for a given protobuf {@link Parser}.
-   * @param messageOrBuilder the message or builder instance that returns decoded messages of type {@code <T>}
-   * @return the message decoder
-   */
-  static <T> GrpcMessageDecoder<T> decoder(MessageOrBuilder messageOrBuilder) {
-    Message dit = messageOrBuilder.getDefaultInstanceForType();
-    Parser<T> parser = (Parser<T>) dit.getParserForType();
-    return new GrpcMessageDecoder<>() {
-      @Override
-      public T decode(GrpcMessage msg) throws CodecException {
-        switch (msg.format()) {
-          case PROTOBUF:
-            try {
-              return parser.parseFrom(msg.payload().getBytes());
-            } catch (InvalidProtocolBufferException e) {
-              throw new CodecException(e);
-            }
-          case JSON:
-            try {
-              Message.Builder builder = dit.toBuilder();
-              JsonFormat.parser().merge(msg.payload().toString(StandardCharsets.UTF_8), builder);
-              return (T) builder.build();
-            } catch (InvalidProtocolBufferException e) {
-              throw new CodecException(e);
-            }
-          default:
-            throw new IllegalArgumentException("Invalid wire format: " + msg.format());
-        }
-      }
-      @Override
-      public boolean accepts(WireFormat format) {
-        return true;
-      }
-      @Override
-      public Descriptors.Descriptor messageDescriptor() {
-        return dit.getDescriptorForType();
-      }
-    };
-  }
 
   GrpcMessageDecoder<Buffer> IDENTITY = new GrpcMessageDecoder<>() {
     @Override
@@ -79,30 +28,6 @@ public interface GrpcMessageDecoder<T> {
       return true;
     }
   };
-
-  /**
-   * Create a decoder for a given protobuf {@link Parser}.
-   * @param builder the supplier of a message builder
-   * @return the message decoder
-   */
-  static <T> GrpcMessageDecoder<T> json(Supplier<Message.Builder> builder) {
-    return new GrpcMessageDecoder<>() {
-      @Override
-      public T decode(GrpcMessage msg) throws CodecException {
-        try {
-          Message.Builder builderInstance = builder.get();
-          JsonFormat.parser().merge(msg.payload().toString(StandardCharsets.UTF_8), builderInstance);
-          return (T) builderInstance.build();
-        } catch (InvalidProtocolBufferException e) {
-          throw new CodecException(e);
-        }
-      }
-      @Override
-      public boolean accepts(WireFormat format) {
-        return format == WireFormat.JSON;
-      }
-    };
-  }
 
   /**
    * Create a decoder in JSON format decoding to instances of the {@code clazz} using
@@ -187,15 +112,5 @@ public interface GrpcMessageDecoder<T> {
    * @return true if the given wire format is accepted, false otherwise
    */
   boolean accepts(WireFormat format);
-
-  /**
-   * Returns the protobuf message descriptor if this decoder was created from a protobuf message type, {@code null} otherwise.
-   *
-   * @return the protobuf descriptor or {@code null}
-   */
-  @Unstable
-  default Descriptors.Descriptor messageDescriptor() {
-    return null;
-  }
 
 }

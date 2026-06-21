@@ -18,6 +18,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.common.*;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
+import io.vertx.grpc.protobuf.ProtobufMessageEncoder;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerResponse;
 import io.vertx.tests.common.GrpcTestBase;
@@ -42,12 +44,12 @@ import static org.junit.Assert.*;
  */
 public abstract class ServerTestBase extends GrpcTestBase {
 
-  public static GrpcMessageDecoder<Empty> EMPTY_DECODER = GrpcMessageDecoder.decoder(Empty.newBuilder());
-  public static GrpcMessageEncoder<Empty> EMPTY_ENCODER = GrpcMessageEncoder.encoder();
-  public static GrpcMessageDecoder<EchoRequest> ECHO_REQUEST_DECODER = GrpcMessageDecoder.decoder(EchoRequest.newBuilder());
-  public static GrpcMessageEncoder<EchoResponse> ECHO_RESPONSE_ENCODER = GrpcMessageEncoder.encoder();
-  public static GrpcMessageDecoder<StreamingRequest> STREAMING_REQUEST_DECODER = GrpcMessageDecoder.decoder(StreamingRequest.newBuilder());
-  public static GrpcMessageEncoder<StreamingResponse> STREAMING_RESPONSE_ENCODER = GrpcMessageEncoder.encoder();
+  public static GrpcMessageDecoder<Empty> EMPTY_DECODER = ProtobufMessageDecoder.decoder(Empty.newBuilder());
+  public static GrpcMessageEncoder<Empty> EMPTY_ENCODER = ProtobufMessageEncoder.encoder();
+  public static GrpcMessageDecoder<EchoRequest> ECHO_REQUEST_DECODER = ProtobufMessageDecoder.decoder(EchoRequest.newBuilder());
+  public static GrpcMessageEncoder<EchoResponse> ECHO_RESPONSE_ENCODER = ProtobufMessageEncoder.encoder();
+  public static GrpcMessageDecoder<StreamingRequest> STREAMING_REQUEST_DECODER = ProtobufMessageDecoder.decoder(StreamingRequest.newBuilder());
+  public static GrpcMessageEncoder<StreamingResponse> STREAMING_RESPONSE_ENCODER = ProtobufMessageEncoder.encoder();
 
   public static final ServiceName TEST_SERVICE_NAME = ServiceName.create("io.vertx.grpcweb.TestService");
   public static final ServiceMethod<Empty, Empty> EMPTY_CALL = ServiceMethod.server(TEST_SERVICE_NAME, "EmptyCall", EMPTY_ENCODER, EMPTY_DECODER);

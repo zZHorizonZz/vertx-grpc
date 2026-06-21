@@ -13,6 +13,8 @@ import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.WriteStream;
 import io.vertx.docgen.Source;
 import io.vertx.grpc.common.*;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
+import io.vertx.grpc.protobuf.ProtobufMessageEncoder;
 import io.vertx.grpc.health.HealthService;
 import io.vertx.grpc.reflection.ReflectionService;
 import io.vertx.grpc.server.*;
@@ -36,8 +38,8 @@ public class GrpcServerExamples {
     ServiceMethod<HelloRequest, HelloReply> sayHello = ServiceMethod.server(
       serviceName,
       "SayHello",
-      GrpcMessageEncoder.encoder(),
-      GrpcMessageDecoder.decoder(HelloRequest.newBuilder()));
+      ProtobufMessageEncoder.encoder(),
+      ProtobufMessageDecoder.decoder(HelloRequest.newBuilder()));
   }
 
   public void reuseServiceMethod() {

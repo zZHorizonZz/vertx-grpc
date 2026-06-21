@@ -3,6 +3,8 @@ package io.vertx.grpc.health.handler;
 import io.vertx.core.Future;
 import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.GrpcMessageEncoder;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
+import io.vertx.grpc.protobuf.ProtobufMessageEncoder;
 import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.health.v1.HealthCheckResponse;
@@ -20,8 +22,8 @@ public class GrpcHealthListV1Handler extends GrpcHealthV1HandlerBase implements 
   public static final ServiceMethod<HealthListRequest, HealthListResponse> SERVICE_METHOD = ServiceMethod.server(
     ServiceName.create("grpc.health.v1.Health"),
     "List",
-    GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder(HealthListRequest.newBuilder()));
+    ProtobufMessageEncoder.encoder(),
+    ProtobufMessageDecoder.decoder(HealthListRequest.newBuilder()));
 
   public GrpcHealthListV1Handler(ServiceContainer server, Map<String, Supplier<Future<Boolean>>> healthChecks) {
     super(server, healthChecks);

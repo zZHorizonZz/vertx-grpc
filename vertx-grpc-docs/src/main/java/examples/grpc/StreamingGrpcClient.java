@@ -13,6 +13,8 @@ import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.GrpcMessageEncoder;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
+import io.vertx.grpc.protobuf.ProtobufMessageEncoder;
 
 /**
  * <p>A client for invoking the Streaming gRPC service.</p>
@@ -25,8 +27,8 @@ public interface StreamingGrpcClient extends StreamingClient {
   ServiceMethod<examples.grpc.Item, examples.grpc.Empty> Source = ServiceMethod.client(
     ServiceName.create("examples.grpc", "Streaming"),
     "Source",
-    GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder(examples.grpc.Item.newBuilder()));
+    ProtobufMessageEncoder.encoder(),
+    ProtobufMessageDecoder.decoder(examples.grpc.Item.newBuilder()));
 
   /**
    * Sink protobuf RPC client service method.
@@ -34,8 +36,8 @@ public interface StreamingGrpcClient extends StreamingClient {
   ServiceMethod<examples.grpc.Empty, examples.grpc.Item> Sink = ServiceMethod.client(
     ServiceName.create("examples.grpc", "Streaming"),
     "Sink",
-    GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder(examples.grpc.Empty.newBuilder()));
+    ProtobufMessageEncoder.encoder(),
+    ProtobufMessageDecoder.decoder(examples.grpc.Empty.newBuilder()));
 
   /**
    * Pipe protobuf RPC client service method.
@@ -43,8 +45,8 @@ public interface StreamingGrpcClient extends StreamingClient {
   ServiceMethod<examples.grpc.Item, examples.grpc.Item> Pipe = ServiceMethod.client(
     ServiceName.create("examples.grpc", "Streaming"),
     "Pipe",
-    GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder(examples.grpc.Item.newBuilder()));
+    ProtobufMessageEncoder.encoder(),
+    ProtobufMessageDecoder.decoder(examples.grpc.Item.newBuilder()));
 
   /**
    * Create and return a Streaming gRPC service client. The assumed wire format is Protobuf.

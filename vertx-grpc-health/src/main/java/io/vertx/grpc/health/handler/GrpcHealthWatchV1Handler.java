@@ -4,6 +4,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.GrpcMessageEncoder;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
+import io.vertx.grpc.protobuf.ProtobufMessageEncoder;
 import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.health.HealthServiceOptions;
@@ -28,8 +30,8 @@ public class GrpcHealthWatchV1Handler extends GrpcHealthV1HandlerBase implements
   public static final ServiceMethod<HealthCheckRequest, HealthCheckResponse> SERVICE_METHOD = ServiceMethod.server(
     ServiceName.create("grpc.health.v1.Health"),
     "Watch",
-    GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder(HealthCheckRequest.newBuilder()));
+    ProtobufMessageEncoder.encoder(),
+    ProtobufMessageDecoder.decoder(HealthCheckRequest.newBuilder()));
 
   private final Vertx vertx;
   private final HealthServiceOptions options;

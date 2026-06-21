@@ -12,11 +12,11 @@ import java.util.List;
 
 public class TranscodingMessageDecoder<Req> implements GrpcMessageDecoder<Req> {
 
-  private final GrpcMessageDecoder<Req> messageDecoder;
+  private final io.vertx.grpc.protobuf.ProtobufMessageDecoder<Req> messageDecoder;
   private final String transcodingRequestBody;
   private final List<HttpVariableBinding> bindings;
 
-  public TranscodingMessageDecoder(GrpcMessageDecoder<Req> messageDecoder, String transcodingRequestBody, List<HttpVariableBinding> bindings) {
+  public TranscodingMessageDecoder(io.vertx.grpc.protobuf.ProtobufMessageDecoder<Req> messageDecoder, String transcodingRequestBody, List<HttpVariableBinding> bindings) {
     this.messageDecoder = messageDecoder;
     this.transcodingRequestBody = transcodingRequestBody;
     this.bindings = bindings;

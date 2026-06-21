@@ -11,6 +11,8 @@ import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.GrpcMessageEncoder;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
+import io.vertx.grpc.protobuf.ProtobufMessageEncoder;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.ServiceContainer;
@@ -87,8 +89,8 @@ public class GreeterGrpcService extends GreeterService implements Service {
   public static final io.vertx.grpc.transcoding.TranscodingServiceMethod<examples.grpc.HelloRequest, examples.grpc.HelloReply> SayHello = io.vertx.grpc.transcoding.TranscodingServiceMethod.server(
     SERVICE_NAME,
     "SayHello",
-    GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder(examples.grpc.HelloRequest.newBuilder()),
+    ProtobufMessageEncoder.encoder(),
+    ProtobufMessageDecoder.decoder(examples.grpc.HelloRequest.newBuilder()),
     SayHello_OPTIONS
   );
 

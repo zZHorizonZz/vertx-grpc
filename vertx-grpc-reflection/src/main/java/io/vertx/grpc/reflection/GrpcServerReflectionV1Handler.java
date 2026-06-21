@@ -13,6 +13,8 @@ package io.vertx.grpc.reflection;
 import com.google.protobuf.Descriptors;
 import io.vertx.grpc.reflection.v1.*;
 import io.vertx.grpc.common.*;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
+import io.vertx.grpc.protobuf.ProtobufMessageEncoder;
 import io.vertx.grpc.server.*;
 
 import java.util.*;
@@ -26,8 +28,8 @@ class GrpcServerReflectionV1Handler implements ServiceMethodInvoker<ServerReflec
   public static final ServiceMethod<ServerReflectionRequest, ServerReflectionResponse> SERVICE_METHOD = ServiceMethod.server(
     ServiceName.create("grpc.reflection.v1.ServerReflection"),
     "ServerReflectionInfo",
-    GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder(ServerReflectionRequest.newBuilder()));
+    ProtobufMessageEncoder.encoder(),
+    ProtobufMessageDecoder.decoder(ServerReflectionRequest.newBuilder()));
 
   private final ServiceContainer server;
 

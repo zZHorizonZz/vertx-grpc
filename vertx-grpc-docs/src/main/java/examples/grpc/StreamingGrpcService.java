@@ -11,6 +11,8 @@ import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.GrpcMessageEncoder;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
+import io.vertx.grpc.protobuf.ProtobufMessageEncoder;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.ServiceContainer;
@@ -71,8 +73,8 @@ public class StreamingGrpcService extends StreamingService implements Service {
   public static final ServiceMethod<examples.grpc.Empty, examples.grpc.Item> Source = ServiceMethod.server(
     SERVICE_NAME,
     "Source",
-    GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder(examples.grpc.Empty.newBuilder()));
+    ProtobufMessageEncoder.encoder(),
+    ProtobufMessageDecoder.decoder(examples.grpc.Empty.newBuilder()));
 
   /**
    * Sink protobuf RPC server service method.
@@ -80,8 +82,8 @@ public class StreamingGrpcService extends StreamingService implements Service {
   public static final ServiceMethod<examples.grpc.Item, examples.grpc.Empty> Sink = ServiceMethod.server(
     SERVICE_NAME,
     "Sink",
-    GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder(examples.grpc.Item.newBuilder()));
+    ProtobufMessageEncoder.encoder(),
+    ProtobufMessageDecoder.decoder(examples.grpc.Item.newBuilder()));
 
   /**
    * Pipe protobuf RPC server service method.
@@ -89,8 +91,8 @@ public class StreamingGrpcService extends StreamingService implements Service {
   public static final ServiceMethod<examples.grpc.Item, examples.grpc.Item> Pipe = ServiceMethod.server(
     SERVICE_NAME,
     "Pipe",
-    GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder(examples.grpc.Item.newBuilder()));
+    ProtobufMessageEncoder.encoder(),
+    ProtobufMessageDecoder.decoder(examples.grpc.Item.newBuilder()));
 
   /**
    * @return a mutable list of the known protobuf RPC server service methods.

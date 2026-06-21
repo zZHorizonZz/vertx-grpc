@@ -13,6 +13,8 @@ import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.GrpcMessageEncoder;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
+import io.vertx.grpc.protobuf.ProtobufMessageEncoder;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.ServiceContainer;
@@ -74,8 +76,8 @@ public class {{grpcServiceFqn}} extends {{serviceFqn}} implements Service {
   public static final ServiceMethod<{{inputType}}, {{outputType}}> {{methodName}} = ServiceMethod.server(
     SERVICE_NAME,
     "{{methodName}}",
-    GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder({{inputType}}.newBuilder()));
+    ProtobufMessageEncoder.encoder(),
+    ProtobufMessageDecoder.decoder({{inputType}}.newBuilder()));
 {{/serviceMethods}}
 
   /**
@@ -115,8 +117,8 @@ public class {{grpcServiceFqn}} extends {{serviceFqn}} implements Service {
   public static final io.vertx.grpc.transcoding.TranscodingServiceMethod<{{inputType}}, {{outputType}}> {{methodName}} = io.vertx.grpc.transcoding.TranscodingServiceMethod.server(
     SERVICE_NAME,
     "{{methodName}}",
-    GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder({{inputType}}.newBuilder()),
+    ProtobufMessageEncoder.encoder(),
+    ProtobufMessageDecoder.decoder({{inputType}}.newBuilder()),
     {{methodName}}_OPTIONS
   );
 {{/transcodingMethods}}

@@ -15,6 +15,8 @@ import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.GrpcMessageEncoder;
+import io.vertx.grpc.protobuf.ProtobufMessageDecoder;
+import io.vertx.grpc.protobuf.ProtobufMessageEncoder;
 
 /**
  * <p>A client for invoking the {{serviceName}} gRPC service.</p>
@@ -34,8 +36,8 @@ public interface {{grpcClientFqn}} extends {{clientFqn}} {
   ServiceMethod<{{outputType}}, {{inputType}}> {{methodName}} = ServiceMethod.client(
     ServiceName.create("{{packageName}}", "{{serviceName}}"),
     "{{methodName}}",
-    GrpcMessageEncoder.encoder(),
-    GrpcMessageDecoder.decoder({{outputType}}.newBuilder()));
+    ProtobufMessageEncoder.encoder(),
+    ProtobufMessageDecoder.decoder({{outputType}}.newBuilder()));
 {{/allMethods}}
 
   /**

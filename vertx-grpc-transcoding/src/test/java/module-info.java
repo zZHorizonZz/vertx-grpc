@@ -8,6 +8,7 @@ open module io.vertx.tests.transcoding {
   requires io.vertx.core;
   requires io.vertx.grpc.transcoding;
   requires io.vertx.grpc.common;
+  requires io.vertx.grpc.protobuf;
   requires io.vertx.grpc.server;
   requires io.vertx.tests.common;
   requires io.vertx.tests.server;

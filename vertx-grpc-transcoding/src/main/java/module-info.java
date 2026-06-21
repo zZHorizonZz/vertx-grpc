@@ -6,6 +6,7 @@ module io.vertx.grpc.transcoding {
   requires com.google.common;
   requires io.vertx.core;
   requires io.vertx.grpc.common;
+  requires io.vertx.grpc.protobuf;
   requires io.vertx.grpc.server;
   requires static io.vertx.codegen.api;
   requires io.netty.codec;
