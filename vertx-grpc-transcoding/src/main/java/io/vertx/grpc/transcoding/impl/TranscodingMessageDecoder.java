@@ -16,24 +16,27 @@ public class TranscodingMessageDecoder<Req> implements GrpcMessageDecoder<Req> {
   private final WireFormat format;
   private final String transcodingRequestBody;
   private final List<HttpVariableBinding> bindings;
+  private final TranscodingBodyFormat bodyFormat;
 
-  public TranscodingMessageDecoder(GrpcMessageDecoder<Req> messageDecoder, WireFormat format, String transcodingRequestBody, List<HttpVariableBinding> bindings) {
+  public TranscodingMessageDecoder(GrpcMessageDecoder<Req> messageDecoder, WireFormat format, String transcodingRequestBody, List<HttpVariableBinding> bindings, TranscodingBodyFormat bodyFormat) {
     this.messageDecoder = messageDecoder;
     this.format = format;
     this.transcodingRequestBody = transcodingRequestBody;
     this.bindings = bindings;
+    this.bodyFormat = bodyFormat;
   }
 
   @Override
   public Req decode(GrpcMessage msg) throws CodecException {
     Buffer transcoded;
     try {
-      transcoded = MessageWeaver.weaveRequestMessage(msg.payload(), bindings, transcodingRequestBody, messageDecoder.messageDescriptor());
+      transcoded = bodyFormat.transcode(msg.payload(), bindings, transcodingRequestBody, messageDecoder.messageDescriptor());
     } catch (DecodeException e) {
       throw new CodecException(e);
     }
     return messageDecoder.decode(GrpcMessage.message("identity", format, transcoded));
   }
+
   @Override
   public boolean accepts(WireFormat format) {
     return messageDecoder.accepts(format);

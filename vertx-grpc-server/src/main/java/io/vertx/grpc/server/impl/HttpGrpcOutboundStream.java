@@ -110,7 +110,7 @@ public abstract class HttpGrpcOutboundStream extends HttpGrpcInboundStream imple
     GrpcStatus st = frame.status();
     boolean trailersOnly = st != GrpcStatus.OK;
     if (!headersSent) {
-      httpResponse.putHeader(HttpHeaders.CONTENT_TYPE, protocol.mediaType());
+      httpResponse.putHeader(HttpHeaders.CONTENT_TYPE, contentType(WireFormat.PROTOBUF));
       if (!trailersOnly) {
         // Service has sent no messages
         headersSent = true;

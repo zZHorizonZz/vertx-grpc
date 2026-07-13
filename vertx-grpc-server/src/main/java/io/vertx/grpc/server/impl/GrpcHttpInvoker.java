@@ -35,4 +35,17 @@ public interface GrpcHttpInvoker {
    */
   <Req, Resp> GrpcInvocation accept(HttpServerRequest request, ServiceMethod<Req, Resp> serviceMethod, WireFormat format);
 
+  /**
+   * Tests whether this invoker handles {@code request} and, if so, the gRPC {@link WireFormat} its messages decode into.
+   * Called during request classification, before routing to a service method, so the server can accept the request and
+   * apply its format checks without hardcoding any content-type knowledge. Implementations may inspect the whole request,
+   * not just its content-type.
+   *
+   * @param request the incoming HTTP request
+   * @return the wire format this invoker would use, or {@code null} if it does not handle the request
+   */
+  default WireFormat accepts(HttpServerRequest request) {
+    return null;
+  }
+
 }

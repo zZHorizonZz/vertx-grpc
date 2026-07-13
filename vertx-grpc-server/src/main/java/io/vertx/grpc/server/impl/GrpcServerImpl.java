@@ -80,7 +80,7 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
 
   @Override
   public void handle(HttpServerRequest httpRequest) {
-    GrpcServerRequestInspector.RequestInspectionDetails details = GrpcServerRequestInspector.inspect(httpRequest);
+    GrpcServerRequestInspector.RequestInspectionDetails details = GrpcServerRequestInspector.inspect(httpRequest, invokers);
     if (details != null) {
       int errorCode = validate(details);
       if (errorCode > 0) {
@@ -124,7 +124,7 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
         case WEB:
         case WEB_TEXT:
           response.setStatusCode(200);
-          response.putHeader(HttpHeaders.CONTENT_TYPE, details.protocol.mediaType());
+          response.putHeader(HttpHeaders.CONTENT_TYPE, grpcMediaType(details.protocol));
           response.putHeader(GrpcHeaderNames.GRPC_STATUS, GrpcStatus.UNIMPLEMENTED.toString());
           response.putHeader(GrpcHeaderNames.GRPC_MESSAGE, msg);
           response.end();
@@ -138,10 +138,27 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
     }
   }
 
+  /**
+   * @return the base gRPC/gRPC-web media type of {@code protocol}, or {@code null} for the transcoding protocol whose
+   *         content-type is not fixed
+   */
+  private static CharSequence grpcMediaType(GrpcProtocol protocol) {
+    switch (protocol) {
+      case HTTP_2:
+        return GrpcMediaType.GRPC;
+      case WEB:
+        return GrpcMediaType.GRPC_WEB;
+      case WEB_TEXT:
+        return GrpcMediaType.GRPC_WEB_TEXT;
+      default:
+        return null;
+    }
+  }
+
   private int validate(GrpcServerRequestInspector.RequestInspectionDetails details) {
     // Check HTTP version compatibility
     if (!details.protocol.accepts(details.version)) {
-      log.trace(details.protocol.mediaType() + " not supported on " + details.version + ", sending error 415");
+      log.trace(details.protocol + " not supported on " + details.version + ", sending error 415");
       return 415;
     }
 
@@ -229,7 +246,7 @@ public class GrpcServerImpl implements GrpcServer, Closeable {
     outboundInvoker.exceptionHandler(dispatcher::handleException);
     outboundInvoker.endHandler(v -> dispatcher.handleEnd());
 
-    outboundInvoker.init(httpRequest, options.getMaxMessageSize());
+    outboundInvoker.init(httpRequest, options.getMaxMessageSize(), format);
 
     return true;
   }

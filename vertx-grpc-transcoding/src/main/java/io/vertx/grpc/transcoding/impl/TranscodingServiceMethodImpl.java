@@ -7,7 +7,6 @@ import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.GrpcMessageEncoder;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.common.WireFormat;
-import io.vertx.grpc.server.GrpcProtocol;
 import io.vertx.grpc.server.impl.GrpcInvocation;
 import io.vertx.grpc.server.impl.MountPoint;
 import io.vertx.grpc.server.impl.HttpGrpcOutboundStream;
@@ -86,7 +85,9 @@ public class TranscodingServiceMethodImpl<I, O> implements TranscodingServiceMet
   }
 
   public GrpcInvocation accept(HttpServerRequest httpRequest, WireFormat format) {
-    if (!httpRequest.getHeader(HttpHeaders.CONTENT_TYPE).equals(GrpcProtocol.TRANSCODING.mediaType())) {
+    String contentType = httpRequest.getHeader(HttpHeaders.CONTENT_TYPE);
+    TranscodingBodyFormat bodyFormat = TranscodingBodyFormat.fromContentType(contentType);
+    if (bodyFormat == null) {
       return null;
     }
 
@@ -94,7 +95,7 @@ public class TranscodingServiceMethodImpl<I, O> implements TranscodingServiceMet
     if (res != null) {
       List<HttpVariableBinding> bindings = new ArrayList<>(res.getVariableBindings());
       io.vertx.core.internal.ContextInternal context = ((HttpServerRequestInternal) httpRequest).context();
-      TranscodingMessageDecoder<I> messageDecoder = new TranscodingMessageDecoder<>(decoder, format, res.getBodyFieldPath(), bindings);
+      TranscodingMessageDecoder<I> messageDecoder = new TranscodingMessageDecoder<>(decoder, format, res.getBodyFieldPath(), bindings, bodyFormat);
       TranscodingMessageDeframer deframer = new TranscodingMessageDeframer(format);
       HttpGrpcOutboundStream protocolHandler = new TranscodingGrpcOutboundStream(context, httpRequest, options.getResponseBody(), deframer);
       return new GrpcInvocation(deframer, protocolHandler, messageDecoder);

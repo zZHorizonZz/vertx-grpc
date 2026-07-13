@@ -6,6 +6,7 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.grpc.common.WireFormat;
 import io.vertx.grpc.server.GrpcProtocol;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,16 +17,17 @@ final class GrpcServerRequestInspector {
   private GrpcServerRequestInspector() {
   }
 
-  public static RequestInspectionDetails inspect(HttpServerRequest request) {
+  public static RequestInspectionDetails inspect(HttpServerRequest request, List<GrpcHttpInvoker> invokers) {
     RequestInspectionDetailsBuilder builder = new RequestInspectionDetailsBuilder().version(request.version());
-    if (!determineContentType(request.getHeader(HttpHeaders.CONTENT_TYPE), builder)) {
+    if (!determineContentType(request, invokers, builder)) {
       return null;
     }
 
     return builder.build();
   }
 
-  private static boolean determineContentType(String contentType, RequestInspectionDetailsBuilder builder) {
+  private static boolean determineContentType(HttpServerRequest request, List<GrpcHttpInvoker> invokers, RequestInspectionDetailsBuilder builder) {
+    String contentType = request.getHeader(HttpHeaders.CONTENT_TYPE);
     if (contentType != null) {
       Matcher matcher = CONTENT_TYPE_PATTERN.matcher(contentType);
       if (matcher.matches()) {
@@ -49,12 +51,15 @@ final class GrpcServerRequestInspector {
           builder.format(WireFormat.PROTOBUF);
         }
         return true;
-      } else {
-        if (GrpcProtocol.TRANSCODING.mediaType().equals(contentType)) {
-          builder.protocol(GrpcProtocol.TRANSCODING);
-          builder.format(WireFormat.JSON);
-          return true;
-        }
+      }
+    }
+
+    for (GrpcHttpInvoker invoker : invokers) {
+      WireFormat format = invoker.accepts(request);
+      if (format != null) {
+        builder.protocol(GrpcProtocol.TRANSCODING);
+        builder.format(format);
+        return true;
       }
     }
 

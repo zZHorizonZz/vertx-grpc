@@ -8,6 +8,7 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.internal.buffer.BufferInternal;
+import io.vertx.grpc.common.GrpcMediaType;
 import io.vertx.grpc.common.GrpcStatus;
 import io.vertx.grpc.common.WireFormat;
 import io.vertx.grpc.common.impl.GrpcHeadersFrame;
@@ -33,7 +34,11 @@ public class WebGrpcOutboundStream extends HttpGrpcOutboundStream {
 
   @Override
   protected String contentType(WireFormat wireFormat) {
-    return protocol.mediaType();
+    CharSequence base = protocol == WEB_TEXT ? GrpcMediaType.GRPC_WEB_TEXT : GrpcMediaType.GRPC_WEB;
+    if (WireFormat.PROTOBUF.name().equals(wireFormat.name())) {
+      return base.toString();
+    }
+    return base + "+" + wireFormat.name();
   }
 
   public static Buffer grpcWebEncode(Buffer message) {

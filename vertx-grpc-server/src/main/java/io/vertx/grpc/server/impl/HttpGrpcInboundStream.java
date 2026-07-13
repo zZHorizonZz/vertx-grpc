@@ -1,7 +1,6 @@
 package io.vertx.grpc.server.impl;
 
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.StreamResetException;
 import io.vertx.core.internal.ContextInternal;
@@ -10,7 +9,6 @@ import io.vertx.grpc.common.GrpcCancelFrame;
 import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcErrorException;
 import io.vertx.grpc.common.GrpcHeaderNames;
-import io.vertx.grpc.common.GrpcMediaType;
 import io.vertx.grpc.common.WireFormat;
 import io.vertx.grpc.common.impl.DefaultGrpcHeadersFrame;
 import io.vertx.grpc.common.impl.DefaultGrpcMessageFrame;
@@ -96,7 +94,7 @@ public class HttpGrpcInboundStream implements GrpcInboundStream {
     }
   }
 
-  void init(HttpServerRequest httpRequest, long maxMessageSize) {
+  void init(HttpServerRequest httpRequest, long maxMessageSize, WireFormat wireFormat) {
 
     // Wire
     GrpcDeframingStream stream = new GrpcDeframingStream(context, httpRequest, deframer);
@@ -120,12 +118,7 @@ public class HttpGrpcInboundStream implements GrpcInboundStream {
     String timeoutHeader = httpRequest.getHeader(GrpcHeaderNames.GRPC_TIMEOUT);
     Duration timeout = timeoutHeader != null ? parseTimeout(timeoutHeader) : null;
 
-    // Fire GrpcHeadersFrame event
     String encoding = httpRequest.headers().get(GrpcHeaderNames.GRPC_ENCODING);
-    String contentType = httpRequest.headers().get(HttpHeaders.CONTENT_TYPE);
-
-    WireFormat wireFormat = GrpcMediaType.parseContentType(contentType, protocol.mediaType());
-
     GrpcHeadersFrame headersFrame = new DefaultGrpcHeadersFrame(wireFormat, encoding, httpRequest.headers(), timeout);
 
     emit(headersFrame);

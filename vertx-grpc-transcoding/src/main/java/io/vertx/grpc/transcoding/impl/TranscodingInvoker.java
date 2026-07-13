@@ -10,6 +10,7 @@
  */
 package io.vertx.grpc.transcoding.impl;
 
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.common.WireFormat;
@@ -34,5 +35,11 @@ public class TranscodingInvoker implements GrpcHttpInvoker {
     }
 
     return transcodingServiceMethod.accept(request, format);
+  }
+
+  @Override
+  public WireFormat accepts(HttpServerRequest request) {
+    TranscodingBodyFormat bodyFormat = TranscodingBodyFormat.fromContentType(request.getHeader(HttpHeaders.CONTENT_TYPE));
+    return bodyFormat == null ? null : bodyFormat.wireFormat();
   }
 }

@@ -11,7 +11,6 @@ import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.grpc.common.CodecException;
 import io.vertx.grpc.common.GrpcStatus;
-import io.vertx.grpc.common.JsonWireFormat;
 import io.vertx.grpc.common.WireFormat;
 import io.vertx.grpc.common.impl.GrpcMessageDeframer;
 import io.vertx.grpc.common.impl.GrpcMessageFrame;
@@ -36,10 +35,7 @@ public class TranscodingGrpcOutboundStream extends HttpGrpcOutboundStream {
 
   @Override
   protected String contentType(WireFormat wireFormat) {
-    if (wireFormat instanceof JsonWireFormat) {
-      return protocol.mediaType();
-    }
-    throw new UnsupportedOperationException();
+    return TranscodingBodyFormat.JSON.contentType();
   }
 
   @Override
@@ -72,7 +68,7 @@ public class TranscodingGrpcOutboundStream extends HttpGrpcOutboundStream {
     try {
       BufferInternal transcoded = (BufferInternal) MessageWeaver.weaveResponseMessage(payload, transcodingResponseBody);
       httpResponse.putHeader(HttpHeaders.CONTENT_LENGTH, Integer.toString(transcoded.length()));
-      httpResponse.putHeader(HttpHeaders.CONTENT_TYPE, GrpcProtocol.TRANSCODING.mediaType());
+      httpResponse.putHeader(HttpHeaders.CONTENT_TYPE, TranscodingBodyFormat.JSON.contentType());
       res = httpResponse.write(transcoded);
     } catch (Exception e) {
       httpResponse.setStatusCode(500).end();

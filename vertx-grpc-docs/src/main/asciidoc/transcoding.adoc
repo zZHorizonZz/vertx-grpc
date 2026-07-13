@@ -1,7 +1,7 @@
 [[grpc-transcoding]]
 == gRPC transcoding
 
-gRPC transcoding allows your services to accept both gRPC and HTTP/JSON (accepting/replying the _application/json_ content type) requests, providing greater flexibility. This feature is particularly useful when:
+gRPC transcoding allows your services to accept both gRPC and HTTP/JSON (accepting/replying the _application/json_ content type, and also accepting _application/x-www-form-urlencoded_ request bodies) requests, providing greater flexibility. This feature is particularly useful when:
 
 * You want to expose your gRPC services to clients that don't support gRPC
 * You need to support both traditional REST APIs and gRPC endpoints
@@ -185,6 +185,28 @@ message HelloReply {
   string reply = 1;
 }
 ----
+
+==== Form URL-encoded requests
+
+In addition to `application/json`, transcoding accepts request bodies sent as `application/x-www-form-urlencoded`.
+This is convenient for HTML form submissions and simple `curl` calls that do not want to build a JSON payload.
+
+Form fields are mapped into the gRPC message exactly like query parameters:
+
+* a field name maps to the message field of the same name, using dots for nested fields (for example `request.name`);
+* a repeated field is populated by repeating the form field (for example `keys=a&keys=b`);
+* values are URL-decoded, so `+` becomes a space and `%XX` escapes are decoded.
+
+The `body` mapping is honoured: with `body: "*"` the fields map to the root of the message, and with
+`body: "<field>"` they nest under that field. Path and query parameter bindings still take precedence on collision, and
+unknown fields are rejected by the parser just like a JSON body.
+
+[source]
+----
+curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'name=vert.x' http://localhost:8080/v1/hello
+----
+
+The response is always JSON, regardless of whether the request body was JSON or form URL-encoded.
 
 ==== Response Body Mapping
 [source,proto]
