@@ -7,6 +7,8 @@ import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.ReplyException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Repeat;
+import io.vertx.ext.unit.junit.RepeatRule;
 import io.vertx.grpc.common.*;
 import io.vertx.grpc.client.InvalidStatusException;
 import io.vertx.grpc.eventbus.EventBusGrpcClient;
@@ -18,6 +20,7 @@ import io.vertx.grpc.server.GrpcServerResponse;
 import io.vertx.tests.common.GrpcTestBase;
 import io.vertx.tests.common.grpc.*;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -56,6 +59,9 @@ public class EventBusGrpcStreamingTest extends GrpcTestBase {
 
   private EventBusGrpcServer server;
   private EventBusGrpcClient client;
+
+  @Rule
+  public RepeatRule repeatRule = new RepeatRule();
 
   @Before
   public void setUp(TestContext should) {
@@ -475,6 +481,7 @@ public class EventBusGrpcStreamingTest extends GrpcTestBase {
   }
 
   @Test
+  @Repeat(1000)
   public void testNoHeadOfLineBlocking() throws Exception {
     int count = 200;
     server.callHandler(SOURCE_SERVER, request -> request.handler(empty -> {
