@@ -122,6 +122,45 @@ public class EventBusGrpcServerTest extends GrpcTestBase {
   }
 
   @Test
+  public void testCallHandlerThrows() throws TimeoutException {
+    server.callHandler(UNARY, request -> {
+      throw new RuntimeException("Unexpected error");
+    });
+
+    Buffer payload = Buffer.buffer(Request.newBuilder().setName("Julien").build().toByteArray());
+    DeliveryOptions opts = new DeliveryOptions()
+      .addHeader(EventBusHeaders.ACTION, "Unary")
+      .addHeader(EventBusHeaders.WIRE_FORMAT, WireFormat.PROTOBUF.name())
+      .setSendTimeout(5000);
+
+    try {
+      vertx.eventBus().<Buffer> request(ADDRESS, payload, opts).await(10, TimeUnit.SECONDS);
+      fail("Should have thrown");
+    } catch (ReplyException e) {
+      assertEquals(ReplyFailure.RECIPIENT_FAILURE, e.failureType());
+      assertEquals(GrpcStatus.UNKNOWN.code, e.failureCode());
+    }
+  }
+
+  @Test
+  public void testCallHandlerThrowsAfterResponseEnded() throws Exception {
+    server.callHandler(UNARY, request -> request.handler(msg -> {
+      request.response().end(Reply.newBuilder().setMessage("Hello " + msg.getName()).build());
+      throw new RuntimeException("Unexpected error");
+    }));
+
+    Buffer payload = Buffer.buffer(Request.newBuilder().setName("Julien").build().toByteArray());
+    DeliveryOptions opts = new DeliveryOptions()
+      .addHeader(EventBusHeaders.ACTION, "Unary")
+      .addHeader(EventBusHeaders.WIRE_FORMAT, WireFormat.PROTOBUF.name())
+      .setSendTimeout(5000);
+
+    Buffer body = vertx.eventBus().<Buffer> request(ADDRESS, payload, opts).map(Message::body).await(10, TimeUnit.SECONDS);
+
+    assertEquals("Hello Julien", Reply.parseFrom(body.getBytes()).getMessage());
+  }
+
+  @Test
   public void testUnimplementedMethod() throws TimeoutException {
     ServiceMethod<Request, Reply> otherMethod = ServiceMethod.server(TestConstants.TEST_SERVICE, "Other", false, false, TestConstants.REPLY_ENC, TestConstants.REQUEST_DEC);
     server.callHandler(otherMethod, request -> request.handler(msg -> request.response().end(Reply.getDefaultInstance())));
